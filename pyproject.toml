@@ -1,6 +1,6 @@
 [project]
 name = "germany-on-ai"
-version = "0.1.0"
+version = "0.1"
 description = "An open, sourced record of Germany's engagement on AI."
 readme = "README.md"
 authors = [

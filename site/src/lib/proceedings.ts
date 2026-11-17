@@ -1,4 +1,4 @@
-// PROTOTYPE: the shape of a proceeding as prepared for the pages, and small formatting helpers.
+// The shape of a proceeding as prepared for the pages, and small formatting helpers.
 
 export type Proceeding = {
   id: string;

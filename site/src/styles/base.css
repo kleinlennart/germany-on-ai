@@ -1,4 +1,4 @@
-/* PROTOTYPE base styles: tokens and typography shared by every page.
+/* Base styles: tokens and typography shared by every page.
    Type: Fira Sans (Erik Spiekermann) for text and data, its condensed cut for headlines. */
 :root {
   --ink: #111418;

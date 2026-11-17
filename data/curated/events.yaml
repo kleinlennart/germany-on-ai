@@ -136,6 +136,17 @@
   ai_angle: The dialogue is mandated by UNGA resolution A/RES/79/325 on AI governance.
   held: true
   end: '2026-07-07'
+- id: un-global-dialogue-ai-new-york-2027
+  date: '2027-05-03'
+  end: '2027-05-04'
+  precision: day
+  level: international
+  kind: UN
+  title: Second UN Global Dialogue on AI Governance, New York
+  source_url: https://www.un.org/global-dialogue-ai-governance/en
+  source_name: United Nations
+  ai_angle: The dialogue is mandated by UNGA resolution A/RES/79/325 on AI governance.
+  held: false
 - id: ccw-gge-laws-2026-session-1
   date: '2026-03-02'
   precision: day

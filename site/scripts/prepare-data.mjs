@@ -1,8 +1,9 @@
-// PROTOTYPE: flatten stored DIP proceedings into one small JSON file for the UI.
+// The site's data: stored records and build exports, flattened into small JSON files
+// under src/data (generated, not committed).
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const dir = "../../data/records/dip/vorgang";
+const dir = "../data/records/dip/vorgang";
 const records = readdirSync(dir)
   .filter((f) => f.endsWith(".jsonl"))
   .flatMap((f) => readFileSync(join(dir, f), "utf8").trim().split("\n").map(JSON.parse));
@@ -28,7 +29,7 @@ const GROUP = {
   "CDU/CSU": "CDU/CSU", SPD: "SPD", AfD: "AfD", FDP: "FDP", BSW: "BSW", fraktionslos: "Non-attached",
 };
 const memberParties = new Map();
-const activityDir = "../../data/records/dip/aktivitaet";
+const activityDir = "../data/records/dip/aktivitaet";
 for (const f of readdirSync(activityDir).filter((f) => f.endsWith(".jsonl"))) {
   for (const line of readFileSync(join(activityDir, f), "utf8").trim().split("\n")) {
     const a = JSON.parse(line).data;
@@ -45,7 +46,7 @@ for (const f of readdirSync(activityDir).filter((f) => f.endsWith(".jsonl"))) {
 
 // Steps of each proceeding (with documents) and the people involved, for record pages.
 const steps = new Map();
-const stepDir = "../../data/records/dip/vorgangsposition";
+const stepDir = "../data/records/dip/vorgangsposition";
 for (const f of readdirSync(stepDir).filter((f) => f.endsWith(".jsonl"))) {
   for (const line of readFileSync(join(stepDir, f), "utf8").trim().split("\n")) {
     const s = JSON.parse(line).data;
@@ -98,14 +99,17 @@ const rows = records.map(({ data: d, source_url, retrieved_at, content_sha256 })
 rows.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
 
 mkdirSync("src/data", { recursive: true });
+// The release version has one home, pyproject.toml; the header shows it.
+const version = readFileSync("../pyproject.toml", "utf8").match(/^version = "(.+)"$/m)[1];
+writeFileSync("src/data/site.json", JSON.stringify({ version }));
 writeFileSync("src/data/vorgaenge.json", JSON.stringify(rows));
 // The catalogue export comes from `uv run germany-on-ai build` in the repo root.
-writeFileSync("src/data/catalogue.json", readFileSync("../../build/catalogue.json", "utf8"));
+writeFileSync("src/data/catalogue.json", readFileSync("../build/catalogue.json", "utf8"));
 console.log(`prepared ${rows.length} proceedings and the source catalogue`);
 
 // EU lane: Parliament procedure milestones and legal dates of adopted acts.
 const readJsonl = (path) => readFileSync(path, "utf8").trim().split("\n").map(JSON.parse);
-const euFilter = readFileSync("../../data/fetch/eu.yaml", "utf8");
+const euFilter = readFileSync("../data/fetch/eu.yaml", "utf8");
 const shortOf = (key) => {
   const m = euFilter.match(new RegExp(`(?:reference|celex): ${key.replace(/[()/]/g, "\\$&")}\\s+short: (.+)`));
   return m ? m[1].trim() : key;
@@ -120,7 +124,7 @@ const MILESTONES = {
   PUBLICATION_OFFICIAL_JOURNAL: "Published in the Official Journal",
 };
 const euEvents = [];
-for (const { data: p, source_url } of readJsonl("../../data/records/ep/procedure/all.jsonl")) {
+for (const { data: p, source_url } of readJsonl("../data/records/ep/procedure/all.jsonl")) {
   const seen = new Set();
   for (const e of p.consists_of ?? []) {
     const type = (e.had_activity_type ?? "").split("/").pop();
@@ -135,7 +139,7 @@ for (const { data: p, source_url } of readJsonl("../../data/records/ep/procedure
 const amendedBy = Object.fromEntries(
   [...euFilter.matchAll(/celex: (\S+)\s+short: .+\s+(?:#.*\s+)?amended_by: (\S+)/g)].map((m) => [m[1], m[2]]),
 );
-const acts = Object.fromEntries(readJsonl("../../data/records/cellar/act/all.jsonl").map((r) => [r.data.celex, r]));
+const acts = Object.fromEntries(readJsonl("../data/records/cellar/act/all.jsonl").map((r) => [r.data.celex, r]));
 for (const { data: a, source_url } of Object.values(acts)) {
   const amender = acts[amendedBy[a.celex]]?.data;
   const cutoff = amender?.date_entry_into_force?.[0];
@@ -160,10 +164,10 @@ const ordinal = (n) => {
   return `${n}${s}`;
 };
 const AI_RULE = /\bKI\b|[Kk]ünstliche[nrs]? Intelligenz|AI Act|KI-Verordnung/;
-const sittingWeeks = readJsonl("../../data/records/bundestag_sitting_weeks/sitting_week/all.jsonl")
+const sittingWeeks = readJsonl("../data/records/bundestag_sitting_weeks/sitting_week/all.jsonl")
   .map(({ data }) => ({ start: data.start, end: data.end }));
 const germanyEvents = [];
-for (const { data: e, source_url } of readJsonl("../../data/records/bundesrat_events/event/all.jsonl")) {
+for (const { data: e, source_url } of readJsonl("../data/records/bundesrat_events/event/all.jsonl")) {
   const m = e.title.match(/^(\d{2})\.(\d{2})\.(\d{4})(?: (\d{2}:\d{2}) Uhr)? \| ([^|]+)/);
   if (!m) continue;
   const [, d, mo, y, , name] = m;
@@ -175,7 +179,7 @@ for (const { data: e, source_url } of readJsonl("../../data/records/bundesrat_ev
     : "Bundesrat Committee on Digital Affairs and State Modernisation meets";
   germanyEvents.push({ date: `${y}-${mo}-${d}`, kind: "Bundesrat", title, url: source_url });
 }
-for (const { data: g, source_url } of readJsonl("../../data/records/bundesregierung_feeds/item/all.jsonl")) {
+for (const { data: g, source_url } of readJsonl("../data/records/bundesregierung_feeds/item/all.jsonl")) {
   if (!AI_RULE.test(`${g.title} ${g.excerpt}`) || !g.published) continue;
   germanyEvents.push({ date: g.published.slice(0, 10), kind: "Federal Government", title: g.title, url: source_url });
 }
@@ -183,12 +187,12 @@ writeFileSync("src/data/germany-calendar.json", JSON.stringify({ sittingWeeks, e
 console.log(`prepared ${sittingWeeks.length} sitting weeks and ${germanyEvents.length} Germany calendar events`);
 
 // Curated events (validated by the Python build, each with an official source).
-writeFileSync("src/data/curated-events.json", readFileSync("../../build/curated_events.json", "utf8"));
+writeFileSync("src/data/curated-events.json", readFileSync("../build/curated_events.json", "utf8"));
 
 // Government answers to interpellations: question-answer pairs, made readable by the
 // Python build (`build/answer_pairs.json`), grouped by printed paper.
 const answers = new Map();
-for (const p of JSON.parse(readFileSync("../../build/answer_pairs.json", "utf8"))) {
+for (const p of JSON.parse(readFileSync("../build/answer_pairs.json", "utf8"))) {
   const a = answers.get(p.drucksache_id) ?? {
     id: p.drucksache_id, number: p.dokumentnummer, date: p.datum, ministry: p.ressort,
     vorgangId: p.vorgang_id, title: p.vorgang_titel, type: p.vorgangstyp, pdf: p.pdf_url, pairs: [],

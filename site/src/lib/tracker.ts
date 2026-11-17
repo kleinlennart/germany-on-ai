@@ -1,7 +1,7 @@
-// PROTOTYPE: the descriptive analysis behind the tracker page. Every number on the page
+// The descriptive analysis behind the tracker page. Every number on the page
 // comes from here, computed at build time from the stored records.
 import catalogue from "../data/catalogue.json";
-import { type Level, type Seed, seeds } from "../data/seeds";
+import { type Level, type Seed, seeds } from "./seeds";
 import curatedEvents from "../data/curated-events.json";
 import euEvents from "../data/eu-events.json";
 import germanyCalendar from "../data/germany-calendar.json";
