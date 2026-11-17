@@ -1,3 +1,4 @@
+from germany_on_ai.schema.event import CuratedEvent, Level, Precision
 from germany_on_ai.schema.record import SourceRecord, canonical_json, content_hash
 from germany_on_ai.schema.source import (
     Access,
@@ -14,7 +15,10 @@ __all__ = [
     "Access",
     "Arena",
     "Coverage",
+    "CuratedEvent",
     "Kind",
+    "Level",
+    "Precision",
     "Source",
     "SourceRecord",
     "Status",

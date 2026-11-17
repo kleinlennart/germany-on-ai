@@ -1,0 +1,4 @@
+# Dated events that no feed provides, entered by hand. Every entry must cite an official
+# source (source_url). Schema: src/germany_on_ai/schema/event.py.
+# Check with `uv run germany-on-ai catalogue`.
+[]

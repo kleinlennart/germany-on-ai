@@ -69,3 +69,35 @@ def test_export_is_deterministic(tmp_path: Path):
     catalogue.export(sources, first)
     catalogue.export(list(reversed(sources)), second)
     assert first.read_bytes() == second.read_bytes()
+
+
+EVENT = {
+    "id": "example-summit",
+    "date": "2026-02",
+    "precision": "month",
+    "level": "international",
+    "kind": "Summit",
+    "title": "An example summit",
+    "source_url": "https://example.org/summit",
+    "source_name": "Example host government",
+    "held": True,
+}
+
+
+def test_curated_events_file_is_valid():
+    catalogue.load_curated_events()
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"source_url": "not a url"},
+        {"date": "2026-02-10"},  # day date with month precision
+        {"level": "domestic"},  # levels are local … international
+    ],
+)
+def test_curated_event_rules(change):
+    from germany_on_ai.schema import CuratedEvent
+
+    with pytest.raises(ValidationError):
+        CuratedEvent.model_validate(EVENT | change)

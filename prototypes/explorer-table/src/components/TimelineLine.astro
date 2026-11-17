@@ -2,31 +2,43 @@
 // PROTOTYPE: the timeline as a line, left to right, past to future, one lane per level.
 // Exact dates are points; month, season or year dates are bars over the period they
 // cover, so the line never claims more precision than the source has. Upcoming events
-// are labelled; past events are markers whose text is on hover and in the list below,
-// which every marker links to.
-import { eventId, type TimelineItem } from "../lib/tracker";
+// are labelled; all others show in the detail box on hover or selection.
+//
+// Zoom presets are anchored on today. In the browser the line is laid out from each
+// marker's dates: markers that would overlap move to a row just above or below
+// (dodging), so every event stays visible at its exact date. Without JavaScript the
+// server-rendered default range shows, without dodging.
+import { DEFAULT_RANGE, eventId, RANGES, type TimelineItem } from "../lib/tracker";
 
-type Props = { items: TimelineItem[]; from: string; to: string; today: string };
-const { items, from, to, today } = Astro.props as Props;
+type Props = { items: TimelineItem[]; today: string };
+const { items, today } = Astro.props as Props;
 
-const t0 = Date.parse(from), t1 = Date.parse(to);
-const pct = (iso: string) => Math.min(100, Math.max(0, ((Date.parse(iso) - t0) / (t1 - t0)) * 100));
+const initial = RANGES.find((r) => r.key === DEFAULT_RANGE)!;
+const t0 = Date.parse(initial.from), t1 = Date.parse(initial.to);
+const pct = (iso: string) => ((Date.parse(iso) - t0) / (t1 - t0)) * 100;
+const clamp = (v: number) => Math.min(100, Math.max(0, v));
+const visible = (i: TimelineItem) => Date.parse(i.end) >= t0 && Date.parse(i.start) <= t1;
 // Higher level of governance sits higher on the page (a subnational lane would go below Germany).
 const lanes = ["International", "European Union", "Germany"] as const;
 const laneClass = (level: string) => `lv-${level.split(" ")[0].toLowerCase()}`;
-
-const months: { iso: string; label?: string }[] = [];
-for (let d = new Date(from.slice(0, 7) + "-01"); d <= new Date(to); d.setUTCMonth(d.getUTCMonth() + 1)) {
-  const iso = d.toISOString().slice(0, 10);
+const todayX = clamp(pct(today));
+// Server-rendered axis for the default range (the script redraws it on zoom).
+const serverTicks: { iso: string; label?: string }[] = [];
+for (let d = new Date(initial.from.slice(0, 7) + "-01"); d <= new Date(initial.to); d.setUTCMonth(d.getUTCMonth() + 1)) {
+  if (d.getTime() < t0) continue;
   const m = d.getUTCMonth();
-  if (Date.parse(iso) < t0) continue;
   const label = m % 3 === 0 ? d.toLocaleDateString("en-GB", { month: "short", ...(m === 0 ? { year: "numeric" } : {}) }) : undefined;
-  months.push({ iso, label });
+  serverTicks.push({ iso: d.toISOString().slice(0, 10), label });
 }
-const todayX = pct(today);
 ---
+<div class="ranges" role="group" aria-label="Time range" hidden>
+  {RANGES.map((r) => (
+    <button type="button" data-range={r.key} data-from={r.from} data-to={r.to} aria-pressed={r.key === DEFAULT_RANGE ? "true" : "false"}>{r.label}</button>
+  ))}
+</div>
+
 <div class="scroller">
-  <div class="line" role="group" aria-label="Timeline of AI policy events by level">
+  <div class="line" role="group" aria-label="Timeline of AI policy events by level" data-today={today}>
     {lanes.map((lane) => (
       <div class:list={["lane", laneClass(lane)]}>
         <span class="lane-name"><span class="swatch" aria-hidden="true"></span>{lane}</span>
@@ -35,26 +47,28 @@ const todayX = pct(today);
           <span class="rail future" style={`left:${todayX}%`}></span>
           {items.filter((i) => i.level === lane).map((i) => {
             const point = i.start === i.end;
-            const x = pct(i.start), w = Math.max(pct(i.end) - x, 0.6);
+            const x = clamp(pct(i.start)), w = Math.max(clamp(pct(i.end)) - x, 0.6);
             const label = i.short && !point ? i.short : undefined;
+            const id = eventId(i);
             return (
               <>
                 <a
-                  href={`#${eventId(i)}`}
-                  class:list={["mark", point ? "point" : "span", i.fromBrief && "brief"]}
+                  href={`#${id}`}
+                  class:list={["mark", point ? "point" : "span", i.fromBrief && "brief", !visible(i) && "off"]}
                   style={point ? `left:${x}%` : `left:${x}%;width:${w}%`}
-                  title={`${i.when}: ${i.title}`}
                   aria-label={`${i.when}: ${i.title}`}
-                  data-id={eventId(i)}
+                  data-id={id}
                   data-start={i.start}
+                  data-end={i.end}
                   data-when={i.when}
                   data-level={i.level}
                   data-kind={i.status ? `${i.kind}, ${i.status.toLowerCase()}` : i.kind}
                   data-title={i.title}
                   data-href={i.href ?? ""}
+                  data-external={i.external ? "1" : ""}
                   data-brief={i.fromBrief ? "1" : ""}
                 ></a>
-                {label && <span class="label" style={`left:${x + w / 2}%`}>{label}</span>}
+                {label && <span class:list={["label", !visible(i) && "off"]} data-for={id} style={`left:${x + w / 2}%`}>{label}</span>}
               </>
             );
           })}
@@ -64,8 +78,8 @@ const todayX = pct(today);
     <div class="axis">
       <span class="lane-name"></span>
       <div class="track">
-        {months.map((m) => (
-          <span class:list={["tick", m.label && "major"]} style={`left:${pct(m.iso)}%`}>{m.label && <span>{m.label}</span>}</span>
+        {serverTicks.map((tk) => (
+          <span class:list={["tick", tk.label && "major"]} style={`left:${pct(tk.iso)}%`}>{tk.label && <span>{tk.label}</span>}</span>
         ))}
       </div>
     </div>
@@ -95,31 +109,121 @@ const todayX = pct(today);
 
 <script>
   // Progressive enhancement: without this, markers link to the list below.
-  const marks = [...document.querySelectorAll<HTMLAnchorElement>(".line .mark")].sort(
-    (a, b) => (a.dataset.start! < b.dataset.start! ? -1 : a.dataset.start! > b.dataset.start! ? 1 : 0),
-  );
+  const line = document.querySelector<HTMLElement>(".line")!;
+  const today = line.dataset.today!;
+  const byStart = (a: HTMLElement, b: HTMLElement) =>
+    a.dataset.start! < b.dataset.start! ? -1 : a.dataset.start! > b.dataset.start! ? 1 : 0;
+  const marks = [...line.querySelectorAll<HTMLAnchorElement>(".mark")].sort(byStart);
+  const ranges = document.querySelector<HTMLElement>(".ranges")!;
   const row = document.querySelector<HTMLElement>(".detail-row")!;
   const panel = row.querySelector<HTMLElement>(".detail")!;
   const prev = row.querySelector<HTMLButtonElement>(".d-prev")!;
   const next = row.querySelector<HTMLButtonElement>(".d-next")!;
   const $ = (sel: string) => panel.querySelector<HTMLElement>(sel)!;
-  let current = -1; // the selected event; hovering only previews
-  let shown = -1;
+  let range = { from: "", to: "" };
+  let current: HTMLAnchorElement | null = null; // the selected event; hovering only previews
+  let shown: HTMLAnchorElement | null = null;
 
+  const visibleMarks = () => marks.filter((m) => !m.classList.contains("off"));
+
+  // --- Layout ------------------------------------------------------------------
+  const ROW_STEP = 13; // px between dodge rows; three rows fit a lane
+  const ROWS = [0, -1, 1];
+  const GAP = 3;
+
+  function axisTicks(t0: number, t1: number) {
+    const months = (t1 - t0) / (30.44 * 864e5);
+    const ticks: { t: number; label?: string }[] = [];
+    const d = new Date(t0);
+    d.setUTCDate(1);
+    for (; d.getTime() <= t1; d.setUTCMonth(d.getUTCMonth() + 1)) {
+      if (d.getTime() < t0) continue;
+      const m = d.getUTCMonth();
+      const show = months <= 9 ? true : months <= 30 ? m % 3 === 0 : m === 0;
+      if (months > 30 && m % 3 !== 0) continue; // long ranges: quarterly ticks only
+      const label = !show
+        ? undefined
+        : months > 30
+          ? String(d.getUTCFullYear())
+          : d.toLocaleDateString("en-GB", { month: "short", ...(m === 0 ? { year: "numeric" } : {}) });
+      ticks.push({ t: d.getTime(), label });
+    }
+    return ticks;
+  }
+
+  function layout() {
+    const t0 = Date.parse(range.from), t1 = Date.parse(range.to);
+    const track = line.querySelector<HTMLElement>(".lane .track")!;
+    const W = track.clientWidth;
+    const x = (iso: string) => ((Date.parse(iso) - t0) / (t1 - t0)) * W;
+    const clampX = (v: number) => Math.min(W, Math.max(0, v));
+    const todayX = clampX(x(today));
+
+    line.querySelectorAll<HTMLElement>(".rail.past").forEach((r) => (r.style.width = `${todayX}px`));
+    line.querySelectorAll<HTMLElement>(".rail.future").forEach((r) => (r.style.left = `${todayX}px`));
+    line.querySelector<HTMLElement>(".today")!.style.left = `${todayX}px`;
+
+    for (const lane of line.querySelectorAll<HTMLElement>(".lane")) {
+      const laneMarks = [...lane.querySelectorAll<HTMLAnchorElement>(".mark")].sort(byStart);
+      const rowEnd = new Map(ROWS.map((r) => [r, -Infinity]));
+      for (const m of laneMarks) {
+        const a = x(m.dataset.start!), b = x(m.dataset.end!);
+        const off = b < 0 || a > W;
+        m.classList.toggle("off", off);
+        const label = lane.querySelector<HTMLElement>(`.label[data-for="${m.dataset.id}"]`);
+        label?.classList.toggle("off", off);
+        if (off) continue;
+        const point = m.classList.contains("point");
+        const left = point ? a : clampX(a);
+        const width = point ? 0 : Math.max(clampX(b) - left, 6);
+        const x1 = point ? left - 7 : left, x2 = point ? left + 7 : left + width;
+        // First row where this marker clears the previous one; if none, the least crowded.
+        const rowChoice =
+          ROWS.find((r) => rowEnd.get(r)! + GAP <= x1) ??
+          ROWS.reduce((best, r) => (rowEnd.get(r)! < rowEnd.get(best)! ? r : best), 0);
+        rowEnd.set(rowChoice, x2);
+        m.style.left = `${left}px`;
+        if (!point) m.style.width = `${width}px`;
+        m.style.setProperty("--dy", `${rowChoice * ROW_STEP}px`);
+        if (label) {
+          label.style.left = `${left + width / 2}px`;
+          label.style.setProperty("--dy", `${rowChoice * ROW_STEP}px`);
+        }
+      }
+    }
+
+    const axis = line.querySelector<HTMLElement>(".axis .track")!;
+    axis.replaceChildren(
+      ...axisTicks(t0, t1).map(({ t, label }) => {
+        const tick = document.createElement("span");
+        tick.className = label ? "tick major" : "tick";
+        tick.style.left = `${((t - t0) / (t1 - t0)) * W}px`;
+        if (label) {
+          const text = document.createElement("span");
+          text.textContent = label;
+          tick.append(text);
+        }
+        return tick;
+      }),
+    );
+    if (shown && !shown.classList.contains("off")) pointAt(shown);
+  }
+
+  // --- Detail box --------------------------------------------------------------
   // The notch is placed from the marker's real position, so it points at it at any width.
   function pointAt(m: HTMLElement) {
     const markRect = m.getBoundingClientRect();
     const panelRect = panel.getBoundingClientRect();
-    const x = markRect.left + markRect.width / 2 - panelRect.left;
-    panel.style.setProperty("--notch", `${Math.min(Math.max(x, 14), panelRect.width - 14)}px`);
+    const px = markRect.left + markRect.width / 2 - panelRect.left;
+    panel.style.setProperty("--notch", `${Math.min(Math.max(px, 14), panelRect.width - 14)}px`);
   }
 
-  function render(index: number) {
-    shown = index;
-    const m = marks[index], d = m.dataset;
+  function render(m: HTMLAnchorElement) {
+    shown = m;
+    const d = m.dataset;
     row.hidden = false;
     panel.dataset.level = d.level!.split(" ")[0].toLowerCase();
-    panel.classList.toggle("preview", index !== current);
+    panel.classList.toggle("preview", m !== current);
     $(".d-when").textContent = d.when!;
     $(".d-level").textContent = d.level!;
     $(".d-kind").textContent = d.kind!;
@@ -127,53 +231,87 @@ const todayX = pct(today);
     const link = $(".d-link") as HTMLAnchorElement;
     link.hidden = !d.href;
     link.href = d.href || "";
+    link.textContent = d.external ? "Open the source" : "Open the record";
+    if (d.external) { link.target = "_blank"; link.rel = "noopener"; } else { link.removeAttribute("target"); link.removeAttribute("rel"); }
     $(".d-brief").hidden = !d.brief;
     pointAt(m);
   }
 
-  function select(index: number, updateUrl = true) {
-    if (index < 0 || index >= marks.length) return;
-    marks[current]?.classList.remove("selected");
-    current = index;
-    marks[index].classList.add("selected");
-    prev.disabled = index === 0;
-    next.disabled = index === marks.length - 1;
-    render(index);
-    if (updateUrl) history.replaceState(null, "", `#${marks[index].dataset.id}`);
+  function select(m: HTMLAnchorElement | undefined, updateUrl = true) {
+    if (!m) return;
+    current?.classList.remove("selected");
+    current = m;
+    m.classList.add("selected");
+    const vis = visibleMarks();
+    prev.disabled = vis.indexOf(m) <= 0;
+    next.disabled = vis.indexOf(m) === vis.length - 1;
+    render(m);
+    if (updateUrl) history.replaceState(null, "", `#${m.dataset.id}`);
   }
 
-  marks.forEach((m, i) => {
+  const step = (delta: number) => {
+    const vis = visibleMarks();
+    select(vis[vis.indexOf(current!) + delta]);
+  };
+  const nextUpcoming = () => visibleMarks().find((m) => m.dataset.start! >= today) ?? visibleMarks().at(-1);
+
+  // --- Range buttons -------------------------------------------------------------
+  function setRange(button: HTMLButtonElement) {
+    ranges.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+    range = { from: button.dataset.from!, to: button.dataset.to! };
+    layout();
+    if (!current || current.classList.contains("off")) select(nextUpcoming(), false);
+    else select(current, false);
+  }
+
+  ranges.hidden = false;
+  ranges.querySelectorAll<HTMLButtonElement>("button").forEach((b) => b.addEventListener("click", () => setRange(b)));
+  marks.forEach((m) => {
     m.addEventListener("click", (event) => {
       event.preventDefault();
-      select(i);
+      select(m);
     });
-    m.addEventListener("mouseenter", () => render(i));
-    m.addEventListener("mouseleave", () => render(current));
+    m.addEventListener("mouseenter", () => render(m));
+    m.addEventListener("mouseleave", () => current && render(current));
   });
-  prev.addEventListener("click", () => select(current - 1));
-  next.addEventListener("click", () => select(current + 1));
-  document.querySelector(".line")!.addEventListener("keydown", (event) => {
+  prev.addEventListener("click", () => step(-1));
+  next.addEventListener("click", () => step(1));
+  line.addEventListener("keydown", (event) => {
     const key = (event as KeyboardEvent).key;
     if (key !== "ArrowLeft" && key !== "ArrowRight") return;
     event.preventDefault();
-    select(current + (key === "ArrowRight" ? 1 : -1));
-    marks[current].focus({ preventScroll: true });
+    step(key === "ArrowRight" ? 1 : -1);
+    current?.focus({ preventScroll: true });
   });
-  addEventListener("resize", () => shown >= 0 && pointAt(marks[shown]));
-  document.querySelector(".scroller")!.addEventListener("scroll", () => shown >= 0 && pointAt(marks[shown]));
+  addEventListener("resize", layout);
+  document.querySelector(".scroller")!.addEventListener("scroll", () => shown && pointAt(shown));
 
-  // Start from a shared link if there is one, else from the next upcoming event.
-  const fromHash = marks.findIndex((m) => `#${m.dataset.id}` === location.hash);
-  const today = new Date().toISOString().slice(0, 10);
-  const upcoming = marks.findIndex((m) => m.dataset.start! >= today);
-  select(fromHash >= 0 ? fromHash : upcoming >= 0 ? upcoming : marks.length - 1, false);
+  // Start on the default range; select a shared event if the link names one (zooming out
+  // if it lies outside the range), else the next upcoming event.
+  const fromHash = marks.find((m) => `#${m.dataset.id}` === location.hash);
+  const buttons = [...ranges.querySelectorAll<HTMLButtonElement>("button")];
+  const initialButton = buttons.find((b) => b.getAttribute("aria-pressed") === "true")!;
+  setRange(initialButton);
+  if (fromHash) {
+    if (fromHash.classList.contains("off")) setRange(buttons.at(-1)!);
+    select(fromHash, false);
+  }
 </script>
 
 <style>
+  .ranges { display: flex; gap: 6px; margin: 0 0 10px 8.5rem; }
+  .ranges[hidden] { display: none; }
+  .ranges button {
+    font-size: 13px; padding: 4px 11px; border-radius: 999px; cursor: pointer;
+    background: none; border: 1px solid var(--rule-strong); color: var(--ink-soft);
+  }
+  .ranges button:hover { border-color: var(--ink); color: var(--ink); }
+  .ranges button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+
   .scroller { overflow-x: auto; margin: 4px 0 8px; }
   .line { position: relative; min-width: 720px; padding-top: 26px; }
   .lane, .axis, .today-layer { display: grid; grid-template-columns: 8.5rem 1fr; }
-  .lane { height: 46px; align-items: center; }
+  .lane { height: 50px; align-items: center; }
   /* Common region: a hairline closes each lane so its events read as one group. */
   .lane .track { border-bottom: 1px solid var(--rule); }
   .lane-name { font-size: 13px; color: var(--ink); display: flex; align-items: center; gap: 7px; }
@@ -188,23 +326,29 @@ const todayX = pct(today);
   /* Dashed only for the future: it reads as "not yet", which is what it means here. */
   .rail.future { right: 0; border-top-style: dashed; }
 
-  .mark { position: absolute; top: 50%; display: block; background: var(--lane); }
+  /* --dy is the dodge offset set by the layout script (0 without JavaScript). */
+  .mark { position: absolute; top: calc(50% + var(--dy, 0px)); display: block; background: var(--lane); }
+  .off { display: none !important; }
   .point { width: 11px; height: 11px; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 2px var(--bg, #fff); }
   .point.brief { background: var(--bg, #fff); border: 2px solid var(--lane); box-sizing: border-box; }
   .span { height: 7px; border-radius: 4px; transform: translateY(-50%); opacity: 0.9; }
   .span.brief { background: color-mix(in srgb, var(--lane) 22%, white); border: 1.5px solid var(--lane); box-sizing: border-box; height: 9px; }
-  .mark { cursor: pointer; transition: transform 0.12s ease-out; }
-  .point:hover { transform: translate(-50%, -50%) scale(1.35); }
-  .span:hover { transform: translateY(-50%) scaleY(1.5); }
-  .mark:hover, .mark:focus-visible, .mark.selected { z-index: 2; outline: 2px solid var(--ink); outline-offset: 2px; }
+  .mark { cursor: pointer; transition: transform 0.12s ease-out, filter 0.12s, background-color 0.12s; }
+  /* Dots grow a little on hover; bars keep their shape and only darken. */
+  .point:hover { transform: translate(-50%, -50%) scale(1.25); }
+  .span:hover { filter: brightness(0.85); }
+  /* Selection in the event's own colour: a thin ring on dots, a solid fill on bars. */
+  .point.selected { z-index: 2; box-shadow: 0 0 0 2px var(--bg, #fff), 0 0 0 3.5px var(--lane); }
+  .span.selected { z-index: 2; background: var(--lane); }
+  .mark:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
   @media (prefers-reduced-motion: reduce) { .mark { transition: none; } }
-  .label { position: absolute; bottom: calc(50% + 9px); transform: translateX(-50%); font-size: 12.5px; color: var(--ink); white-space: nowrap; }
+  .label { position: absolute; bottom: calc(50% + 9px - var(--dy, 0px)); transform: translateX(-50%); font-size: 12.5px; color: var(--ink); white-space: nowrap; }
 
   .axis { height: 30px; }
   .axis .track { border-top: 1px solid var(--rule); }
-  .tick { position: absolute; top: 0; height: 4px; border-left: 1px solid var(--rule-strong); }
-  .tick.major { height: 7px; }
-  .tick > span { position: absolute; top: 9px; left: 0; transform: translateX(-50%); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+  .axis :global(.tick) { position: absolute; top: 0; height: 4px; border-left: 1px solid var(--rule-strong); }
+  .axis :global(.tick.major) { height: 7px; }
+  .axis :global(.tick > span) { position: absolute; top: 9px; left: 0; transform: translateX(-50%); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
 
   .today-layer { position: absolute; inset: 0; pointer-events: none; }
   .today { position: absolute; top: 0; bottom: 30px; border-left: 2px solid var(--ink); }
@@ -238,5 +382,8 @@ const todayX = pct(today);
   .d-brief { color: var(--muted); font-style: italic; }
   @media (prefers-reduced-motion: reduce) { .detail::before, .detail { transition: none; } }
   [hidden] { display: none !important; }
-  @media (max-width: 680px) { .detail-row { grid-template-columns: 1fr; } .detail-row > span:first-child { display: none; } }
+  @media (max-width: 680px) {
+    .detail-row { grid-template-columns: 1fr; } .detail-row > span:first-child { display: none; }
+    .ranges { margin-left: 0; }
+  }
 </style>

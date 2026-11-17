@@ -29,3 +29,27 @@ class SourceRecord(Model):
     retrieved_at: datetime
     content_sha256: str
     data: dict[str, Any]
+
+    @classmethod
+    def of(
+        cls,
+        *,
+        source_id: str,
+        entity: str,
+        native_id: str,
+        data: dict[str, Any],
+        source_url: str,
+        language: str,
+        retrieved_at: datetime,
+    ) -> SourceRecord:
+        """Wrap one source item in the envelope; the hash ignores volatile fields."""
+        return cls(
+            id=f"{source_id}:{entity}:{native_id}",
+            source_id=source_id,
+            entity=entity,
+            source_url=source_url,
+            language=language,
+            retrieved_at=retrieved_at,
+            content_sha256=content_hash(data),
+            data=data,
+        )

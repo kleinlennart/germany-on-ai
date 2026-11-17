@@ -305,21 +305,44 @@
   publisher: European Parliament
   url: https://data.europarl.europa.eu
   description: >-
-    The Parliament's open data portal; intended source for roll-call votes by member, including
-    German members. Coverage and format still to be confirmed.
+    The Parliament's open data API: legislative procedures with their dated events (committee
+    votes, plenary votes, negotiations, signature, publication) and plenary sitting days.
   kind: primary
   arenas: [eu]
   access: api
-  status: planned
+  status: ingested
+  languages: [en]
+  update_frequency: daily
+  terms:
+    licence: Reuse authorised if the entire item is reproduced and the source acknowledged
+    url: https://www.europarl.europa.eu/legal-notice/en/
+    verified: 2026-11-17
+    notes: >-
+      From the europarl.europa.eu legal notice. A dataset-level licence on the open data portal
+      and the API rate limit are not yet confirmed.
+  docs:
+    - https://data.europarl.europa.eu/en/developer-corner/opendata-api
+
+- id: eu-cellar
+  name: EU Publications Office (Cellar)
+  publisher: Publications Office of the European Union
+  url: https://op.europa.eu
+  description: >-
+    Metadata of EU law behind EUR-Lex, queried by SPARQL: signature, publication and
+    entry-into-force dates of adopted acts, including staged application dates.
+  kind: primary
+  arenas: [eu]
+  access: api
+  status: ingested
   languages: [en]
   terms:
-    licence: Reuse authorised with acknowledgement (© European Union – Source European Parliament)
-    url: https://www.europarl.europa.eu/legal-notice/en/
+    licence: CC BY 4.0 for EU-owned content (Commission Decision 2011/833/EU)
+    url: https://commission.europa.eu/legal-notice_en
     notes: >-
-      From the europarl.europa.eu legal notice; whether it governs the open data portal is not yet
-      confirmed (portal is client-rendered).
-
-# --- International -------------------------------------------------------------
+      From the Commission's legal notice. The EUR-Lex legal notice itself could not be read
+      automatically; check by hand before publishing.
+  docs:
+    - https://publications.europa.eu/webapi/rdf/sparql
 
 - id: un-digital-library
   name: UN Digital Library

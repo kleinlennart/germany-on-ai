@@ -7,11 +7,23 @@ from pathlib import Path
 import yaml
 from pydantic import TypeAdapter
 
-from germany_on_ai.schema import Source, Status
+from germany_on_ai.schema import CuratedEvent, Source, Status
 
 CATALOGUE_PATH = Path("data/catalogue/sources.yaml")
+CURATED_EVENTS_PATH = Path("data/curated/events.yaml")
 
 _sources = TypeAdapter(list[Source])
+_events = TypeAdapter(list[CuratedEvent])
+
+
+def load_curated_events(path: Path = CURATED_EVENTS_PATH) -> list[CuratedEvent]:
+    events = _events.validate_python(
+        yaml.safe_load(path.read_text(encoding="utf-8")) or []
+    )
+    duplicates = [i for i, n in Counter(e.id for e in events).items() if n > 1]
+    if duplicates:
+        raise ValueError(f"duplicate event ids: {', '.join(sorted(duplicates))}")
+    return events
 
 
 def load(path: Path = CATALOGUE_PATH) -> list[Source]:

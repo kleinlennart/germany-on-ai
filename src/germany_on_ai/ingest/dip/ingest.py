@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict
 from germany_on_ai import store
 from germany_on_ai.ingest.dip import transcripts
 from germany_on_ai.ingest.dip.client import DipClient, Params
-from germany_on_ai.schema import SourceRecord, content_hash
+from germany_on_ai.schema import SourceRecord
 
 SOURCE_ID = "dip"
 FETCH_FILTER_PATH = Path("data/fetch/dip.yaml")
@@ -72,15 +72,14 @@ def source_url(entity: str, data: dict[str, Any]) -> str:
 def to_record(
     entity: str, data: dict[str, Any], retrieved_at: datetime
 ) -> SourceRecord:
-    return SourceRecord(
-        id=f"{SOURCE_ID}:{entity}:{data['id']}",
+    return SourceRecord.of(
         source_id=SOURCE_ID,
         entity=entity,
+        native_id=data["id"],
+        data=data,
         source_url=source_url(entity, data),
         language="de",
         retrieved_at=retrieved_at,
-        content_sha256=content_hash(data),
-        data=data,
     )
 
 

@@ -1,0 +1,19 @@
+# EU legislative files and adopted acts followed on the timeline. Add an entry to follow
+# another file. This decides only what is downloaded. Bump `version` when it changes.
+version: 1
+
+# European Parliament procedures (Legislative Observatory references).
+procedures:
+  - reference: 2021/0106(COD)
+    short: AI Act
+  - reference: 2025/0359(COD)
+    short: Digital Omnibus on AI
+  - reference: 2025/0360(COD)
+    short: Digital Omnibus
+
+# Adopted acts (CELEX numbers) whose legal dates come from the Publications Office.
+acts:
+  - celex: 32024R1689
+    short: AI Act
+  - celex: 32026R1744
+    short: Digital Omnibus on AI

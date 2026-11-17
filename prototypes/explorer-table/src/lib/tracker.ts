@@ -2,6 +2,7 @@
 // comes from here, computed at build time from the stored records.
 import catalogue from "../data/catalogue.json";
 import { type Level, type Seed, seeds } from "../data/seeds";
+import euEvents from "../data/eu-events.json";
 import data from "../data/vorgaenge.json";
 import { formatDate, type Proceeding, recordHref } from "./proceedings";
 
@@ -132,6 +133,7 @@ export type TimelineItem = {
   title: string;
   status?: string;
   href?: string;
+  external?: boolean; // href points to the source outside this site
   fromBrief: boolean;
   held?: boolean;
   start: string; // ISO day; with end, the period a coarse date covers
@@ -184,11 +186,48 @@ const recordItem = (p: Proceeding): TimelineItem => ({
 
 export const today = new Date().toISOString().slice(0, 10);
 export const yearAgo = `${Number(today.slice(0, 4)) - 1}${today.slice(4)}`;
-const dated = [
-  ...current.filter((p) => p.type in DEBATES && p.type !== "Gesetzgebung").map(recordItem),
-  ...legislation.filter((p) => STATUS[p.status]?.order >= 3).map(recordItem),
-  ...seeds.map(seedItem),
+// Debates and settled bills from parliament; for the line, from every term.
+const parliamentItems = (ps: Proceeding[]) => [
+  ...ps.filter((p) => p.type in DEBATES && p.type !== "Gesetzgebung").map(recordItem),
+  ...ps.filter((p) => p.type === "Gesetzgebung" && STATUS[p.status]?.order >= 3).map(recordItem),
 ];
+const otherItems: TimelineItem[] = [
+  ...seeds.map(seedItem),
+  ...euEvents.map(
+    (e): TimelineItem => ({
+      sortKey: e.date,
+      when: formatDate(e.date),
+      level: "European Union",
+      kind: e.kind,
+      title: e.title,
+      href: e.url,
+      external: true,
+      fromBrief: false,
+      start: e.date,
+      end: e.date,
+    }),
+  ),
+];
+const dated = [...parliamentItems(current), ...otherItems];
+/** Everything with a date, across all terms: the timeline line can zoom out to 2017. */
+export const lineItems = [...parliamentItems(ai), ...otherItems].sort((a, b) => a.start.localeCompare(b.start));
+
+const shiftMonths = (iso: string, months: number) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return d.toISOString().slice(0, 10);
+};
+/** Zoom presets for the line, all anchored on today. The first-listed default is "1y". */
+export const RANGES = [
+  { key: "3m", label: "±3 months", from: "", to: "" },
+  { key: "1y", label: "±1 year", from: "", to: "" },
+  { key: "all", label: "Since 2017", from: "", to: "" },
+].map((r) => ({
+  ...r,
+  from: r.key === "3m" ? shiftMonths(today, -3) : r.key === "1y" ? shiftMonths(today, -12) : TERMS[0].start,
+  to: r.key === "3m" ? shiftMonths(today, 3) : shiftMonths(today, 12),
+}));
+export const DEFAULT_RANGE = "1y";
 const isPast = (i: TimelineItem) => i.held ?? i.sortKey <= today;
 export const timeline = {
   upcoming: dated.filter((i) => !isPast(i)).sort((a, b) => a.sortKey.localeCompare(b.sortKey)),

@@ -8,7 +8,7 @@ import Timeline from "../components/Timeline.astro";
 import { formatDate } from "../lib/proceedings";
 import {
   asOf, byOpposition, coverage, currentRate, initiatorBase, initiators, instruments, legislation,
-  previousRate, questionShare, rates, recordsWith, RULE, statusOf, timeline, today, topics, totals, yearAgo,
+  previousRate, questionShare, rates, recordsWith, RULE, statusOf, timeline, today, topics, totals,
 } from "../lib/tracker";
 
 const round = (n: number) => Math.round(n);
@@ -24,8 +24,6 @@ const multiple =
     ? `${ratio % 1 >= 0.1 ? "more than " : ""}${words[Math.floor(ratio)] ?? `${Math.floor(ratio)} times`} the rate of`
     : "a higher rate than";
 const next = timeline.upcoming[0];
-// The line runs to the end of the year of the last upcoming event.
-const timelineEnd = `${(timeline.upcoming.at(-1)?.end ?? today).slice(0, 4)}-12-31`;
 ---
 <Site title="German AI policy: where things stand | Germany on AI" description="A situation report on German AI policy, updated as parliament and government act.">
   <section class="intro">
@@ -51,7 +49,7 @@ const timelineEnd = `${(timeline.upcoming.at(-1)?.end ?? today).slice(0, 4)}-12-
   <section id="timeline">
     <h2><a class="self" href="#timeline"><span class="ph">What has happened</span> <span class="ph">and what is coming</span></a></h2>
     <p class="note">Parliamentary items come from the Bundestag's documentation system and carry the date of their latest document. Some meet the AI rule while touching AI only in part. Government, EU and international events come from research notes for now and are marked "Source not yet linked".</p>
-    <Timeline upcoming={timeline.upcoming} pending={timeline.pending} past={timeline.past} today={today} from={yearAgo} to={timelineEnd} />
+    <Timeline upcoming={timeline.upcoming} pending={timeline.pending} past={timeline.past} today={today} />
   </section>
 
   <section id="trend">

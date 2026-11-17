@@ -34,3 +34,45 @@ writeFileSync("src/data/vorgaenge.json", JSON.stringify(rows));
 // The catalogue export comes from `uv run germany-on-ai build` in the repo root.
 writeFileSync("src/data/catalogue.json", readFileSync("../../build/catalogue.json", "utf8"));
 console.log(`prepared ${rows.length} proceedings and the source catalogue`);
+
+// EU lane: Parliament procedure milestones and legal dates of adopted acts.
+const readJsonl = (path) => readFileSync(path, "utf8").trim().split("\n").map(JSON.parse);
+const euFilter = readFileSync("../../data/fetch/eu.yaml", "utf8");
+const shortOf = (key) => {
+  const m = euFilter.match(new RegExp(`(?:reference|celex): ${key.replace(/[()/]/g, "\\$&")}\\s+short: (.+)`));
+  return m ? m[1].trim() : key;
+};
+const MILESTONES = {
+  COMMITTEE_ADOPTING_REPORT: "Parliament committee adopts its report",
+  COMMITTEE_ADOPTING_OPINION: "Parliament committee adopts an opinion",
+  PLENARY_ADOPT_POSITION: "Parliament adopts its position",
+  INTERINSTITUTIONAL_NEGOTIATION: "Trilogue with Council and Commission",
+  COMMITTEE_APPROVE_PROVISIONAL_AGREEMENT: "Parliament committee approves the provisional agreement",
+  SIGNATURE: "Signed by Parliament and Council",
+  PUBLICATION_OFFICIAL_JOURNAL: "Published in the Official Journal",
+};
+const euEvents = [];
+for (const { data: p, source_url } of readJsonl("../../data/records/ep/procedure/all.jsonl")) {
+  const seen = new Set();
+  for (const e of p.consists_of ?? []) {
+    const type = (e.had_activity_type ?? "").split("/").pop();
+    const label = MILESTONES[type];
+    if (!label || seen.has(`${e.activity_date}|${label}`)) continue;
+    seen.add(`${e.activity_date}|${label}`);
+    euEvents.push({ date: e.activity_date, kind: "Parliament", title: `${shortOf(p.label)}: ${label}`, url: source_url, source: "European Parliament open data" });
+  }
+}
+for (const { data: a, source_url } of readJsonl("../../data/records/cellar/act/all.jsonl")) {
+  (a.date_entry_into_force ?? []).forEach((date, i) =>
+    euEvents.push({
+      date,
+      kind: "EU law",
+      title: `${shortOf(a.celex)}: ${i === 0 ? "enters into force" : "further provisions start to apply"}`,
+      url: source_url,
+      source: "EU Publications Office",
+    }),
+  );
+}
+euEvents.sort((a, b) => a.date.localeCompare(b.date));
+writeFileSync("src/data/eu-events.json", JSON.stringify(euEvents));
+console.log(`prepared ${euEvents.length} EU events`);

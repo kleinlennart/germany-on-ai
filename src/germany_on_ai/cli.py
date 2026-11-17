@@ -11,6 +11,8 @@ from germany_on_ai.ingest.dip import ingest as dip
 from germany_on_ai.ingest.dip import spec as dip_spec
 from germany_on_ai.ingest.dip import transcripts
 from germany_on_ai.ingest.dip.client import DipClient, DipError
+from germany_on_ai.ingest.eu import ingest as eu
+from germany_on_ai.ingest.http import FetchError
 
 FULLTEXT_PATH = build.BUILD_DIR / "release" / "dip_plenarprotokoll_text.parquet"
 
@@ -21,8 +23,14 @@ def _catalogue(args: argparse.Namespace) -> int:
     except (ValidationError, ValueError) as error:
         print(f"Catalogue invalid: {error}", file=sys.stderr)
         return 1
+    try:
+        events = catalogue.load_curated_events()
+    except (ValidationError, ValueError) as error:
+        print(f"Curated events invalid: {error}", file=sys.stderr)
+        return 1
     questions = catalogue.open_questions(sources)
     print(f"{len(sources)} sources valid; {len(questions)} open questions")
+    print(f"{len(events)} curated events valid")
     for question in questions:
         print(f"  - {question}")
     if args.export:
@@ -41,6 +49,19 @@ def _ingest_dip(args: argparse.Namespace) -> int:
         stats = dip.run(client, full=args.full)
     except DipError as error:
         print(f"DIP ingest failed: {error}", file=sys.stderr)
+        return 1
+    for entity, s in stats.items():
+        print(
+            f"{entity}: {s.added} added, {s.changed} changed, {s.unchanged} unchanged"
+        )
+    return 0
+
+
+def _ingest_eu(args: argparse.Namespace) -> int:
+    try:
+        stats = eu.run(offline=args.offline)
+    except FetchError as error:
+        print(f"EU ingest failed: {error}", file=sys.stderr)
         return 1
     for entity, s in stats.items():
         print(
@@ -110,6 +131,13 @@ def main(argv: list[str] | None = None) -> int:
         help="reuse responses cached in the last 12 hours",
     )
     dip_parser.set_defaults(run=_ingest_dip)
+    eu_parser = sources.add_parser(
+        "eu", help="EU: Parliament procedures and legal dates of acts"
+    )
+    eu_parser.add_argument(
+        "--offline", action="store_true", help="read cached responses only"
+    )
+    eu_parser.set_defaults(run=_ingest_eu)
 
     spec = commands.add_parser(
         "check-dip-spec", help="compare DIP's live API spec with the lock"
