@@ -1,7 +1,7 @@
 [project]
 name = "germany-on-ai"
 version = "0.1.0"
-description = "Add your description here"
+description = "An open, sourced record of Germany's engagement on AI."
 readme = "README.md"
 authors = [
     { name = "kleinlennart", email = "31488915+kleinlennart@users.noreply.github.com" }
@@ -15,3 +15,24 @@ germany-on-ai = "germany_on_ai:main"
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.7.0",
+    "pyright>=1.1.414",
+    "pytest>=9.2.0",
+    "ruff>=0.17.5",
+]
+
+[tool.ruff]
+extend-exclude = [".agents", ".claude"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.pyright]
+include = ["src", "tests"]
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
