@@ -1,0 +1,242 @@
+---
+// PROTOTYPE: the timeline as a line, left to right, past to future, one lane per level.
+// Exact dates are points; month, season or year dates are bars over the period they
+// cover, so the line never claims more precision than the source has. Upcoming events
+// are labelled; past events are markers whose text is on hover and in the list below,
+// which every marker links to.
+import { eventId, type TimelineItem } from "../lib/tracker";
+
+type Props = { items: TimelineItem[]; from: string; to: string; today: string };
+const { items, from, to, today } = Astro.props as Props;
+
+const t0 = Date.parse(from), t1 = Date.parse(to);
+const pct = (iso: string) => Math.min(100, Math.max(0, ((Date.parse(iso) - t0) / (t1 - t0)) * 100));
+// Higher level of governance sits higher on the page (a subnational lane would go below Germany).
+const lanes = ["International", "European Union", "Germany"] as const;
+const laneClass = (level: string) => `lv-${level.split(" ")[0].toLowerCase()}`;
+
+const months: { iso: string; label?: string }[] = [];
+for (let d = new Date(from.slice(0, 7) + "-01"); d <= new Date(to); d.setUTCMonth(d.getUTCMonth() + 1)) {
+  const iso = d.toISOString().slice(0, 10);
+  const m = d.getUTCMonth();
+  if (Date.parse(iso) < t0) continue;
+  const label = m % 3 === 0 ? d.toLocaleDateString("en-GB", { month: "short", ...(m === 0 ? { year: "numeric" } : {}) }) : undefined;
+  months.push({ iso, label });
+}
+const todayX = pct(today);
+---
+<div class="scroller">
+  <div class="line" role="group" aria-label="Timeline of AI policy events by level">
+    {lanes.map((lane) => (
+      <div class:list={["lane", laneClass(lane)]}>
+        <span class="lane-name"><span class="swatch" aria-hidden="true"></span>{lane}</span>
+        <div class="track">
+          <span class="rail past" style={`width:${todayX}%`}></span>
+          <span class="rail future" style={`left:${todayX}%`}></span>
+          {items.filter((i) => i.level === lane).map((i) => {
+            const point = i.start === i.end;
+            const x = pct(i.start), w = Math.max(pct(i.end) - x, 0.6);
+            const label = i.short && !point ? i.short : undefined;
+            return (
+              <>
+                <a
+                  href={`#${eventId(i)}`}
+                  class:list={["mark", point ? "point" : "span", i.fromBrief && "brief"]}
+                  style={point ? `left:${x}%` : `left:${x}%;width:${w}%`}
+                  title={`${i.when}: ${i.title}`}
+                  aria-label={`${i.when}: ${i.title}`}
+                  data-id={eventId(i)}
+                  data-start={i.start}
+                  data-when={i.when}
+                  data-level={i.level}
+                  data-kind={i.status ? `${i.kind}, ${i.status.toLowerCase()}` : i.kind}
+                  data-title={i.title}
+                  data-href={i.href ?? ""}
+                  data-brief={i.fromBrief ? "1" : ""}
+                ></a>
+                {label && <span class="label" style={`left:${x + w / 2}%`}>{label}</span>}
+              </>
+            );
+          })}
+        </div>
+      </div>
+    ))}
+    <div class="axis">
+      <span class="lane-name"></span>
+      <div class="track">
+        {months.map((m) => (
+          <span class:list={["tick", m.label && "major"]} style={`left:${pct(m.iso)}%`}>{m.label && <span>{m.label}</span>}</span>
+        ))}
+      </div>
+    </div>
+    <div class="today-layer" aria-hidden="true">
+      <span class="lane-name"></span>
+      <div class="track"><span class="today" style={`left:${todayX}%`}><span>Today</span></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail panel: filled in place when a marker is chosen, so the line stays in view. -->
+<div class="detail-row" hidden>
+  <span></span>
+  <div class="detail-wrap">
+    <button type="button" class="d-step d-prev" aria-label="Earlier event">‹</button>
+    <section class="detail" aria-live="polite" aria-label="Selected event">
+      <p class="d-meta"><span class="d-swatch" aria-hidden="true"></span><span class="d-when"></span><span class="d-level"></span><span class="d-kind"></span></p>
+      <p class="d-title"></p>
+      <p class="d-foot">
+        <a class="d-link" href="">Open the record</a>
+        <span class="d-brief">Source not yet linked.</span>
+      </p>
+    </section>
+    <button type="button" class="d-step d-next" aria-label="Later event">›</button>
+  </div>
+</div>
+
+<script>
+  // Progressive enhancement: without this, markers link to the list below.
+  const marks = [...document.querySelectorAll<HTMLAnchorElement>(".line .mark")].sort(
+    (a, b) => (a.dataset.start! < b.dataset.start! ? -1 : a.dataset.start! > b.dataset.start! ? 1 : 0),
+  );
+  const row = document.querySelector<HTMLElement>(".detail-row")!;
+  const panel = row.querySelector<HTMLElement>(".detail")!;
+  const prev = row.querySelector<HTMLButtonElement>(".d-prev")!;
+  const next = row.querySelector<HTMLButtonElement>(".d-next")!;
+  const $ = (sel: string) => panel.querySelector<HTMLElement>(sel)!;
+  let current = -1; // the selected event; hovering only previews
+  let shown = -1;
+
+  // The notch is placed from the marker's real position, so it points at it at any width.
+  function pointAt(m: HTMLElement) {
+    const markRect = m.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const x = markRect.left + markRect.width / 2 - panelRect.left;
+    panel.style.setProperty("--notch", `${Math.min(Math.max(x, 14), panelRect.width - 14)}px`);
+  }
+
+  function render(index: number) {
+    shown = index;
+    const m = marks[index], d = m.dataset;
+    row.hidden = false;
+    panel.dataset.level = d.level!.split(" ")[0].toLowerCase();
+    panel.classList.toggle("preview", index !== current);
+    $(".d-when").textContent = d.when!;
+    $(".d-level").textContent = d.level!;
+    $(".d-kind").textContent = d.kind!;
+    $(".d-title").textContent = d.title!;
+    const link = $(".d-link") as HTMLAnchorElement;
+    link.hidden = !d.href;
+    link.href = d.href || "";
+    $(".d-brief").hidden = !d.brief;
+    pointAt(m);
+  }
+
+  function select(index: number, updateUrl = true) {
+    if (index < 0 || index >= marks.length) return;
+    marks[current]?.classList.remove("selected");
+    current = index;
+    marks[index].classList.add("selected");
+    prev.disabled = index === 0;
+    next.disabled = index === marks.length - 1;
+    render(index);
+    if (updateUrl) history.replaceState(null, "", `#${marks[index].dataset.id}`);
+  }
+
+  marks.forEach((m, i) => {
+    m.addEventListener("click", (event) => {
+      event.preventDefault();
+      select(i);
+    });
+    m.addEventListener("mouseenter", () => render(i));
+    m.addEventListener("mouseleave", () => render(current));
+  });
+  prev.addEventListener("click", () => select(current - 1));
+  next.addEventListener("click", () => select(current + 1));
+  document.querySelector(".line")!.addEventListener("keydown", (event) => {
+    const key = (event as KeyboardEvent).key;
+    if (key !== "ArrowLeft" && key !== "ArrowRight") return;
+    event.preventDefault();
+    select(current + (key === "ArrowRight" ? 1 : -1));
+    marks[current].focus({ preventScroll: true });
+  });
+  addEventListener("resize", () => shown >= 0 && pointAt(marks[shown]));
+  document.querySelector(".scroller")!.addEventListener("scroll", () => shown >= 0 && pointAt(marks[shown]));
+
+  // Start from a shared link if there is one, else from the next upcoming event.
+  const fromHash = marks.findIndex((m) => `#${m.dataset.id}` === location.hash);
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = marks.findIndex((m) => m.dataset.start! >= today);
+  select(fromHash >= 0 ? fromHash : upcoming >= 0 ? upcoming : marks.length - 1, false);
+</script>
+
+<style>
+  .scroller { overflow-x: auto; margin: 4px 0 8px; }
+  .line { position: relative; min-width: 720px; padding-top: 26px; }
+  .lane, .axis, .today-layer { display: grid; grid-template-columns: 8.5rem 1fr; }
+  .lane { height: 46px; align-items: center; }
+  /* Common region: a hairline closes each lane so its events read as one group. */
+  .lane .track { border-bottom: 1px solid var(--rule); }
+  .lane-name { font-size: 13px; color: var(--ink); display: flex; align-items: center; gap: 7px; }
+  .swatch { width: 9px; height: 9px; border-radius: 50%; background: var(--lane); flex: none; }
+  .track { position: relative; height: 100%; }
+  .lv-germany { --lane: var(--level-germany); }
+  .lv-european { --lane: var(--level-eu); }
+  .lv-international { --lane: var(--level-international); }
+
+  .rail { position: absolute; top: 50%; height: 0; border-top: 1px solid var(--rule-strong); }
+  .rail.past { left: 0; }
+  /* Dashed only for the future: it reads as "not yet", which is what it means here. */
+  .rail.future { right: 0; border-top-style: dashed; }
+
+  .mark { position: absolute; top: 50%; display: block; background: var(--lane); }
+  .point { width: 11px; height: 11px; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 2px var(--bg, #fff); }
+  .point.brief { background: var(--bg, #fff); border: 2px solid var(--lane); box-sizing: border-box; }
+  .span { height: 7px; border-radius: 4px; transform: translateY(-50%); opacity: 0.9; }
+  .span.brief { background: color-mix(in srgb, var(--lane) 22%, white); border: 1.5px solid var(--lane); box-sizing: border-box; height: 9px; }
+  .mark { cursor: pointer; transition: transform 0.12s ease-out; }
+  .point:hover { transform: translate(-50%, -50%) scale(1.35); }
+  .span:hover { transform: translateY(-50%) scaleY(1.5); }
+  .mark:hover, .mark:focus-visible, .mark.selected { z-index: 2; outline: 2px solid var(--ink); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .mark { transition: none; } }
+  .label { position: absolute; bottom: calc(50% + 9px); transform: translateX(-50%); font-size: 12.5px; color: var(--ink); white-space: nowrap; }
+
+  .axis { height: 30px; }
+  .axis .track { border-top: 1px solid var(--rule); }
+  .tick { position: absolute; top: 0; height: 4px; border-left: 1px solid var(--rule-strong); }
+  .tick.major { height: 7px; }
+  .tick > span { position: absolute; top: 9px; left: 0; transform: translateX(-50%); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+
+  .today-layer { position: absolute; inset: 0; pointer-events: none; }
+  .today { position: absolute; top: 0; bottom: 30px; border-left: 2px solid var(--ink); }
+  .today > span { position: absolute; top: -2px; left: 6px; font-size: 12px; font-weight: 600; }
+
+  .detail-row { display: grid; grid-template-columns: 8.5rem 1fr; margin-top: 8px; }
+  .detail-row[hidden] { display: none; }
+  .detail-wrap { display: grid; grid-template-columns: auto 1fr auto; align-items: stretch; gap: 6px; }
+  .detail { position: relative; border: 1px solid var(--rule-strong); border-radius: 6px; padding: 14px 18px 12px; background: #fff; transition: border-color 0.15s; }
+  .detail.preview { border-style: dashed; }
+  /* Notch pointing up at the event shown: connects box and marker (Gestalt connectedness). */
+  .detail::before {
+    content: ""; position: absolute; top: -7px; left: var(--notch, 50%);
+    width: 12px; height: 12px; background: #fff; border-left: 1px solid var(--rule-strong); border-top: 1px solid var(--rule-strong);
+    transform: translateX(-50%) rotate(45deg); transition: left 0.15s ease-out;
+  }
+  .d-step {
+    width: 30px; border: 1px solid transparent; border-radius: 6px; background: none; cursor: pointer;
+    font-size: 26px; line-height: 1; color: var(--muted);
+  }
+  .d-step:hover:not(:disabled) { color: var(--ink); border-color: var(--rule-strong); background: #fafafa; }
+  .d-step:disabled { opacity: 0.25; cursor: default; }
+  .d-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 0; font-size: 13px; color: var(--muted); }
+  .d-when { color: var(--ink); font-weight: 600; }
+  .d-swatch { width: 9px; height: 9px; border-radius: 50%; background: var(--d-lane); }
+  .detail[data-level="germany"] { --d-lane: var(--level-germany); }
+  .detail[data-level="european"] { --d-lane: var(--level-eu); }
+  .detail[data-level="international"] { --d-lane: var(--level-international); }
+  .d-title { font-family: var(--text); font-size: 18px; font-weight: 500; line-height: 1.4; margin: 6px 0 10px; max-width: 46rem; }
+  .d-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: 0; font-size: 13.5px; }
+  .d-brief { color: var(--muted); font-style: italic; }
+  @media (prefers-reduced-motion: reduce) { .detail::before, .detail { transition: none; } }
+  [hidden] { display: none !important; }
+  @media (max-width: 680px) { .detail-row { grid-template-columns: 1fr; } .detail-row > span:first-child { display: none; } }
+</style>

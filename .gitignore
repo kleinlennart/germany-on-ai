@@ -284,3 +284,9 @@ src/*.dll
 # Rendered notebooks
 notebooks/_output/
 .quarto/
+
+# JavaScript
+node_modules/
+.astro/
+dist/
+prototypes/explorer-table/src/data/

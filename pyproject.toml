@@ -35,6 +35,8 @@ dev = [
 
 [tool.ruff]
 extend-exclude = [".agents", ".claude"]
+# pre-commit passes files by name; keep the excludes for those too (vendored skills).
+force-exclude = true
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]

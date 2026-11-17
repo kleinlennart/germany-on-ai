@@ -1,0 +1,115 @@
+---
+// PROTOTYPE home page, the situation report: a compass for someone who needs to orient themselves in
+// German AI policy now. Descriptive only; every number is computed in lib/tracker.ts.
+import Site from "../layouts/Site.astro";
+import QuarterlyColumns from "../components/charts/QuarterlyColumns.astro";
+import RankedBars from "../components/charts/RankedBars.astro";
+import Timeline from "../components/Timeline.astro";
+import { formatDate } from "../lib/proceedings";
+import {
+  asOf, byOpposition, coverage, currentRate, initiatorBase, initiators, instruments, legislation,
+  previousRate, questionShare, rates, recordsWith, RULE, statusOf, timeline, today, topics, totals, yearAgo,
+} from "../lib/tracker";
+
+const round = (n: number) => Math.round(n);
+const byStatus = (label: string) => legislation.filter((p) => statusOf(p) === label).length;
+const settled = [
+  [byStatus("In force"), "are in force", "is in force"],
+  [byStatus("Passed"), "have passed", "has passed"],
+].filter(([n]) => n).map(([n, many, one]) => `${n} ${n === 1 ? one : many}`).join(", ") + ",";
+const ratio = currentRate.perMonth / previousRate;
+const words = ["", "", "twice", "three times", "four times"];
+const multiple =
+  ratio >= 2
+    ? `${ratio % 1 >= 0.1 ? "more than " : ""}${words[Math.floor(ratio)] ?? `${Math.floor(ratio)} times`} the rate of`
+    : "a higher rate than";
+const next = timeline.upcoming[0];
+// The line runs to the end of the year of the last upcoming event.
+const timelineEnd = `${(timeline.upcoming.at(-1)?.end ?? today).slice(0, 4)}-12-31`;
+---
+<Site title="German AI policy: where things stand | Germany on AI" description="A situation report on German AI policy, updated as parliament and government act.">
+  <section class="intro">
+    <h1>German AI policy: where things stand</h1>
+    <p class="asof">Situation report for {formatDate(today)}. Parliamentary data up to {formatDate(asOf)}.</p>
+    {/* Layer 1 of the reading hierarchy: bold facts read alone give the gist; each links to the section behind it. */}
+    <p class="lede">
+      Since the 21st Bundestag convened in March 2025, parliament has dealt with AI in{" "}
+      <strong>{totals.current} proceedings</strong>,{" "}
+      an average of <a href="#trend"><strong>{round(currentRate.perMonth)} a month</strong></a>, {multiple} either previous term.{" "}
+      <a href="#timeline"><strong>{legislation.length} bills</strong></a> touch AI: {settled} and{" "}
+      <a href="#open-bills"><strong>{timeline.pending.length} are still open</strong></a>.{" "}
+      <a href="#instruments"><strong>{round(questionShare * 100)} percent</strong></a> of proceedings are questions put to the government, and{" "}
+      <a href="#initiators"><strong>opposition groups</strong></a> initiate most of those that name an initiator.
+      {next && (
+        <>
+          {" "}Next on the calendar: <a href="#coming-up"><strong>{next.title}</strong></a> ({next.when}).
+        </>
+      )}
+    </p>
+  </section>
+
+  <section id="timeline">
+    <h2><a class="self" href="#timeline"><span class="ph">What has happened</span> <span class="ph">and what is coming</span></a></h2>
+    <p class="note">Parliamentary items come from the Bundestag's documentation system and carry the date of their latest document. Some meet the AI rule while touching AI only in part. Government, EU and international events come from research notes for now and are marked "Source not yet linked".</p>
+    <Timeline upcoming={timeline.upcoming} pending={timeline.pending} past={timeline.past} today={today} from={yearAgo} to={timelineEnd} />
+  </section>
+
+  <section id="trend">
+    <h2><a class="self" href="#trend"><span class="ph">This term averages {round(currentRate.perMonth)} AI proceedings a month,</span> <span class="ph">against {round(rates[0].perMonth)} and {round(rates[1].perMonth)} in the two before</span></a></h2>
+    <QuarterlyColumns />
+    <p class="source">
+      Proceedings per quarter, dated by their most recent document. Source: DIP, Deutscher Bundestag.
+      Counted as AI if {RULE}. {totals.all.toLocaleString("en")} AI proceedings since October 2017.
+    </p>
+  </section>
+
+  <section id="instruments">
+    <h2><a class="self" href="#instruments"><span class="ph">{round(questionShare * 100)} percent of this term's AI proceedings</span> <span class="ph">are questions to the government</span></a></h2>
+    <RankedBars items={instruments} label="AI proceedings in the 21st Bundestag by instrument" />
+    <p class="source">21st Bundestag, {totals.current} proceedings. Source: DIP.</p>
+  </section>
+
+  <section id="initiators">
+    <h2><a class="self" href="#initiators"><span class="ph">Opposition groups initiate {byOpposition} of the {initiatorBase.named} proceedings</span> <span class="ph">that name an initiator</span></a></h2>
+    <RankedBars items={initiators} label="AI proceedings in the 21st Bundestag by initiator" />
+    <p class="source">
+      A proceeding can have several initiators. Not counted: {initiatorBase.memberQuestions} written and oral questions, which
+      individual members file and which name no group in this data, and {initiatorBase.otherUnnamed} other items without an initiator.
+      Questions will be attributed to groups once speeches and questions are loaded.
+    </p>
+  </section>
+
+  <section id="topics">
+    <h2><a class="self" href="#topics">What AI is discussed alongside</a></h2>
+    <p class="note">The Bundestag's own subject keywords on this term's AI proceedings. Open a row to see the proceedings.</p>
+    <RankedBars items={topics} label="Most frequent other keywords" records={recordsWith} />
+    <p class="source">Keywords assigned by the Bundestag's documentalists. Generic keywords (digitalisation, federal funds, legislation) left out.</p>
+  </section>
+
+  <section id="sources">
+    <h2><a class="self" href="#sources">Sources</a></h2>
+    <p class="note">What this report draws on today, and what is planned.</p>
+    <dl class="coverage">
+      {coverage.map((c) => (
+        <>
+          <dt>{c.label}</dt>
+          <dd>
+            {c.live.length > 0 && <p>In use: {c.live.map((s) => s.name).join("; ")}</p>}
+            {c.planned.length > 0 && <p class="muted">Planned: {c.planned.map((s) => s.name).join("; ")}</p>}
+          </dd>
+        </>
+      ))}
+    </dl>
+    <p class="note">The full list of sources, how each is used and its terms: <a href="method/#catalogue">Method and sources</a>.</p>
+  </section>
+</Site>
+
+<style>
+  .lede a { color: inherit; text-decoration: underline; text-decoration-color: var(--rule-strong); text-underline-offset: 4px; }
+  .lede a:hover { text-decoration-color: var(--ink); }
+  .coverage { max-width: 52rem; display: grid; grid-template-columns: 9rem 1fr; gap: 10px 20px; font-size: 14.5px; }
+  .coverage dt { font-weight: 600; }
+  .coverage dd { margin: 0; }
+  .coverage p { margin: 0 0 4px; }
+  @media (max-width: 640px) { .coverage { grid-template-columns: 1fr; } }
+</style>

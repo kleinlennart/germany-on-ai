@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        { "label": "fix: ruff", "type": "shell", "command": "uv run ruff check --fix && uv run ruff format", "problemMatcher": [ ] },
+        { "label": "check: lint", "type": "shell", "command": "uv run ruff check && uv run ruff format --check", "problemMatcher": [ ] },
+        { "label": "check: types", "type": "shell", "command": "uv run ty check", "problemMatcher": [ ] },
+        { "label": "check: tests", "type": "shell", "command": "uv run pytest", "problemMatcher": [ ] },
+        { "label": "check: catalogue", "type": "shell", "command": "uv run germany-on-ai catalogue", "problemMatcher": [ ] },
+        {
+            "label": "CI (all)",
+            "dependsOrder": "sequence",
+            "dependsOn": [ "check: lint", "check: types", "check: tests", "check: catalogue" ],
+            "group": { "kind": "test", "isDefault": true },
+            "problemMatcher": [ ]
+        }
+    ]
+}

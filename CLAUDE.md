@@ -6,6 +6,7 @@ An open dataset of Germany's engagement on AI (parliament, government, EU, inter
 
 - Vocabulary: [docs/GLOSSARY.md](docs/GLOSSARY.md). Use its terms in code, docs and data.
 - Decisions: [docs/adr/](docs/adr/). Read the relevant ADR before changing data layers, storage, publishability or the build.
+- Source quirks: each ingester keeps a `NOTES.md` of durable facts about its source's data (e.g. [src/germany_on_ai/ingest/dip/NOTES.md](src/germany_on_ai/ingest/dip/NOTES.md)). Read it before working with that source's code or data; add a fact there when you learn one the code depends on.
 
 ## Data rules
 

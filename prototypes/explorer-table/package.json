@@ -1,0 +1,21 @@
+{
+  "name": "explorer-table-prototype",
+  "private": true,
+  "description": "PROTOTYPE, throwaway: three layouts for the proceedings list. Not production code.",
+  "type": "module",
+  "scripts": {
+    "prepare-data": "node scripts/prepare-data.mjs",
+    "dev": "node scripts/prepare-data.mjs && astro dev",
+    "build": "node scripts/prepare-data.mjs && astro build"
+  },
+  "dependencies": {
+    "@astrojs/svelte": "9.1.2",
+    "@tanstack/svelte-table": "9.3.1",
+    "astro": "7.4.5",
+    "svelte": "5.57.3"
+  },
+  "devDependencies": {
+    "svelte-check": "4.7.8",
+    "typescript": "6.0.3"
+  }
+}

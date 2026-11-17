@@ -1,0 +1,86 @@
+---
+// PROTOTYPE chart: AI proceedings per quarter; the current term in the accent colour,
+// earlier terms as grey context. Static SVG, hover via <title>, data table below.
+import { ordinal } from "../../lib/proceedings";
+import { CURRENT, quarters } from "../../lib/tracker";
+
+// Plot starts right after the y labels, which sit flush with the page's left edge.
+const W = 960, H = 220, top = 10, bottom = 40, left = 26, right = 4;
+const plotH = H - top - bottom;
+const slot = (W - left - right) / quarters.length;
+const barW = Math.min(18, slot - 2);
+const max = Math.max(...quarters.map((q) => q.n));
+const step = max > 60 ? 25 : 10;
+// The top tick rounds up, so the tallest column stays inside the scale.
+const ticks = Array.from({ length: Math.ceil(max / step) + 1 }, (_, i) => i * step);
+const y = (v: number) => top + plotH - (v / ticks.at(-1)!) * plotH;
+const x = (i: number) => left + i * slot + (slot - barW) / 2;
+const termStarts = quarters
+  .map((q, i) => ({ ...q, i }))
+  .filter((q, i) => i === 0 || quarters[i - 1].term !== q.term);
+const last = quarters.at(-1)!;
+// Column with a 4px rounded top, square at the baseline.
+const column = (x0: number, y0: number, w: number, h: number) => {
+  const r = Math.min(4, h, w / 2);
+  return `M${x0},${y0 + h}V${y0 + r}Q${x0},${y0} ${x0 + r},${y0}H${x0 + w - r}Q${x0 + w},${y0} ${x0 + w},${y0 + r}V${y0 + h}Z`;
+};
+---
+<figure class="chart">
+  <p class="legend">
+    <span><i class="key now"></i>{ordinal(CURRENT)} Bundestag</span>
+    <span><i class="key past"></i>Earlier terms</span>
+    {last.partial && <span><i class="key partial"></i>Quarter in progress</span>}
+  </p>
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="qc-title" preserveAspectRatio="xMinYMin meet">
+    <title id="qc-title">AI proceedings per quarter, 19th to 21st Bundestag</title>
+    {ticks.map((t) => (
+      <g>
+        <line x1={left} x2={W - right} y1={y(t)} y2={y(t)} class="grid" />
+        <text x={0} y={y(t) + 4} class="tick">{t}</text>
+      </g>
+    ))}
+    {quarters.map((q, i) => (
+      <path
+        d={column(x(i), y(q.n), barW, y(0) - y(q.n))}
+        class:list={["bar", q.term === CURRENT ? (q.partial ? "now partial" : "now") : "past"]}
+      ><title>{q.key}: {q.n} proceedings{q.partial ? " (quarter in progress)" : ""}</title></path>
+    ))}
+    {termStarts.map((q) => (
+      <g>
+        <line x1={x(q.i) - 2} x2={x(q.i) - 2} y1={y(0)} y2={y(0) + 30} class="term-rule" />
+        <text x={x(q.i) + 2} y={y(0) + 28} class:list={["term", q.term === CURRENT && "term-now"]}>{ordinal(q.term)} Bundestag</text>
+      </g>
+    ))}
+    {quarters.filter((q) => q.key.endsWith("Q1")).map((q) => (
+      <text x={x(quarters.indexOf(q)) + barW / 2} y={y(0) + 13} class="tick" text-anchor="middle">{q.key.slice(0, 4)}</text>
+    ))}
+  </svg>
+  <details>
+    <summary>Data</summary>
+    <table class="data">
+      <thead><tr><th>Quarter</th><th>Electoral term</th><th class="num">Proceedings</th></tr></thead>
+      <tbody>{quarters.map((q) => <tr><td>{q.key}{q.partial ? " (in progress)" : ""}</td><td>{ordinal(q.term)}</td><td class="num">{q.n}</td></tr>)}</tbody>
+    </table>
+  </details>
+</figure>
+
+<style>
+  figure { margin: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0 0 16px; font-size: 13px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+  .key.now { background: var(--accent); }
+  .key.past { background: var(--context); }
+  .key.partial { border: 1.5px solid var(--accent); }
+  details { margin-top: 6px; }
+  svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .grid { stroke: var(--rule); stroke-width: 1; }
+  .tick { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar.past { fill: var(--context); }
+  .bar.now { fill: var(--accent); }
+  .bar.partial { fill: var(--bg, #fff); stroke: var(--accent); stroke-width: 1.5; }
+  .bar:hover { opacity: 0.8; }
+  .term-rule { stroke: var(--rule-strong); stroke-width: 1; }
+  .term { font-size: 12px; fill: var(--muted); }
+  .term-now { fill: var(--ink); font-weight: 600; }
+</style>

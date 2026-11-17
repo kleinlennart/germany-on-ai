@@ -1,0 +1,94 @@
+---
+// PROTOTYPE: the sitrep timeline. First the line (left to right, by level) for the overall
+// picture; then the lists to read: coming up, open bills without a date, a "today" rule,
+// and the last twelve months. Every marker on the line links to its entry in the lists.
+import TimelineLine from "./TimelineLine.astro";
+import { eventId, type TimelineItem } from "../lib/tracker";
+import { formatDate } from "../lib/proceedings";
+
+type Props = { upcoming: TimelineItem[]; pending: TimelineItem[]; past: TimelineItem[]; today: string; from: string; to: string };
+const { upcoming, pending, past, today, from, to } = Astro.props as Props;
+const levelClass = (level: string) => `lv-${level.split(" ")[0].toLowerCase()}`;
+---
+<div class="timeline">
+  <TimelineLine items={[...past, ...upcoming]} {from} {to} {today} />
+  {[
+    { id: "coming-up", heading: "Coming up", items: upcoming },
+    { id: "open-bills", heading: "Bills in progress, no date set", items: pending, undated: true },
+  ].map(({ id, heading, items, undated }) => (
+    <section id={id}>
+      <h3><a class="self" href={`#${id}`}>{heading}</a></h3>
+      <ol>
+        {items.map((i) => (
+          <li id={eventId(i)} class:list={[levelClass(i.level), i.fromBrief && "brief"]}>
+            <span class="when num">{undated ? i.status : i.when}</span>
+            <span class="level">{i.level}</span>
+            <span class="what">
+              <span class="kind">{i.kind}</span>
+              {i.href ? <a href={i.href}>{i.title}</a> : <span>{i.title}</span>}
+              {i.fromBrief && <span class="prov">Source not yet linked.</span>}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  ))}
+
+  <p class="today" role="separator">Today, {formatDate(today)}</p>
+
+  <section id="last-twelve-months">
+    <details>
+      <summary><h3>Last twelve months <span class="count">({past.length} events, also on the line above)</span></h3></summary>
+    <ol>
+      {past.map((i) => (
+        <li id={eventId(i)} class:list={[levelClass(i.level), i.fromBrief && "brief"]}>
+          <span class="when num">{i.when}</span>
+          <span class="level">{i.level}</span>
+          <span class="what">
+            <span class="kind">{i.kind}{i.status && `, ${i.status.toLowerCase()}`}</span>
+            {i.href ? <a href={i.href}>{i.title}</a> : <span>{i.title}</span>}
+            {i.fromBrief && <span class="prov">Source not yet linked.</span>}
+          </span>
+        </li>
+      ))}
+    </ol>
+    </details>
+  </section>
+</div>
+
+<style>
+  h3 { font-family: var(--text); font-size: 15px; font-weight: 600; color: var(--ink); margin: 30px 0 8px; }
+  ol { list-style: none; margin: 0; padding: 0; }
+  summary { cursor: pointer; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary h3 { display: inline; }
+  summary h3::before { content: "▸ "; color: var(--muted); }
+  details[open] summary h3::before { content: "▾ "; }
+  summary:hover h3 { color: var(--ink); }
+  .count { font-weight: 400; }
+  li { scroll-margin-top: 16px;
+    display: grid; grid-template-columns: 8.5rem 7.5rem 1fr; gap: 16px; align-items: baseline;
+    padding: 9px 0 9px 14px; border-bottom: 1px solid var(--rule); position: relative;
+  }
+  li::before { content: ""; position: absolute; left: 0; top: 11px; bottom: 11px; width: 3px; border-radius: 2px; background: var(--lane); }
+  li.brief::before { background: none; border: 1.5px solid var(--lane); width: 0; }
+  .lv-germany { --lane: var(--level-germany); }
+  .lv-european { --lane: var(--level-eu); }
+  .lv-international { --lane: var(--level-international); }
+  .when { font-size: 13px; color: var(--ink); }
+  .level { font-size: 13px; color: var(--muted); }
+  .what { display: flex; flex-direction: column; gap: 2px; max-width: 46rem; }
+  .kind { font-size: 12.5px; color: var(--muted); }
+  .what a, .what > span:not(.kind):not(.prov) { font-size: 15px; line-height: 1.4; color: var(--ink); }
+  .what a { text-decoration: none; }
+  .what a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+  .prov { font-size: 12px; color: var(--muted); font-style: italic; }
+  .today {
+    margin: 30px 0 0; padding: 8px 0; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink);
+    font-weight: 600; font-size: 14px;
+  }
+  @media (max-width: 680px) {
+    li { grid-template-columns: auto 1fr; gap: 2px 10px; }
+    .what { grid-column: 1 / -1; }
+  }
+</style>

@@ -1,0 +1,132 @@
+---
+// PROTOTYPE: how the situation report is made. The source catalogue is generated from
+// data/catalogue/sources.yaml (via the build's catalogue.json), never written by hand.
+import Site from "../layouts/Site.astro";
+import catalogue from "../data/catalogue.json";
+import { formatDate, ordinal } from "../lib/proceedings";
+import { asOf, RULE, TERMS, totals } from "../lib/tracker";
+
+type Source = {
+  id: string; name: string; publisher: string; url: string; description: string; kind: string; arenas: string[];
+  access: string; status: string; reason: string | null; paywalled: boolean;
+  terms: { licence: string | null; url: string | null; verified: string | null };
+};
+const sources = catalogue as Source[];
+const LEVELS: Record<string, string> = { international: "International", eu: "European Union", domestic: "Germany" };
+const ORDER = ["international", "eu", "domestic"];
+const levels = (s: Source) => ORDER.filter((l) => s.arenas.includes(l)).map((l) => LEVELS[l]).join(", ");
+// DIP is partly ingested already; the catalogue marks it planned until the full pull lands.
+const statusOf = (s: Source) => (s.id === "dip" ? "In use" : s.status === "planned" ? "Planned" : s.status === "ingested" ? "In use" : "Referenced");
+const rank = (s: Source) => ["In use", "Planned"].indexOf(statusOf(s));
+const used = sources.filter((s) => s.status !== "referenced").sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+const pointedTo = sources.filter((s) => s.status === "referenced").sort((a, b) => a.name.localeCompare(b.name));
+const terms = (s: Source) => (s.terms.verified ? s.terms.licence ?? "Checked" : "Being checked");
+---
+<Site title="Method and sources | Germany on AI" description="How the situation report on German AI policy is made: what counts as AI, where the data comes from, and its limits.">
+  <section class="intro">
+    <h1>Method and sources</h1>
+    <p class="lede">
+      Every figure in the situation report is counted from public records by a rule stated on this page,
+      and every item links to its source. Rebuilding the report from the same records gives the same numbers.
+    </p>
+  </section>
+
+  <section id="what-counts">
+    <h2><a class="self" href="#what-counts">What counts as AI</a></h2>
+    <div class="prose">
+      <p>A parliamentary proceeding counts as AI-related if {RULE}.</p>
+      <p>
+        The Bundestag's documentalists index every proceeding with keywords from a controlled thesaurus.
+        The title rule catches recent items they have not indexed yet. Some proceedings meet the rule while
+        touching AI only in part, such as a broad digital-policy bill. A documented labelling step will
+        replace this rule later.
+      </p>
+    </div>
+  </section>
+
+  <section id="coverage">
+    <h2><a class="self" href="#coverage">Period covered</a></h2>
+    <div class="prose">
+      <p>
+        Every electoral term from the {ordinal(TERMS[0].term)} Bundestag, which convened on {formatDate(TERMS[0].start)}. That term
+        saw the federal AI strategy (November 2018) and the Bundestag's Enquete Commission on Artificial
+        Intelligence. Whole terms are used because parliament organises its records by term. The report
+        focuses on the current term; earlier terms are shown as context. {totals.all.toLocaleString("en")} AI proceedings in all,
+        up to {formatDate(asOf)}.
+      </p>
+    </div>
+  </section>
+
+  <section id="dates">
+    <h2><a class="self" href="#dates">Dates and the timeline</a></h2>
+    <div class="prose">
+      <p>
+        Parliament's documentation system dates a proceeding by its most recent document, not by when it
+        began. Counts per quarter and timeline entries use that date, so a proceeding that started earlier
+        appears when it last moved.
+      </p>
+      <p>
+        On the timeline, an event known only to a month, a season or a year is a bar over that period.
+        Government, EU and international events come from research notes for now and are marked "Source not
+        yet linked" until their own sources are added.
+      </p>
+    </div>
+  </section>
+
+  <section id="limits">
+    <h2><a class="self" href="#limits">Known limits</a></h2>
+    <div class="prose">
+      <ul>
+        <li>Written and oral questions are filed by individual members; until speeches and questions are loaded, they are not attributed to a parliamentary group.</li>
+        <li>Live data so far covers parliament only. Government, EU and international sources are being added.</li>
+        <li>A bill and a written question each count once, so the counts measure activity.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="catalogue">
+    <h2><a class="self" href="#catalogue">Sources</a></h2>
+    <p class="note">The report quotes third-party text briefly and links to it. Each source's terms of use are recorded below.</p>
+
+    <h3 id="catalogue-used">Data sources</h3>
+    <table class="catalogue">
+      <thead><tr><th>Source</th><th>Level</th><th>Status</th><th>Terms</th></tr></thead>
+      <tbody>
+        {used.map((s) => (
+          <tr>
+            <td><a href={s.url} target="_blank" rel="external noopener">{s.name}</a><span class="pub">{s.publisher}</span></td>
+            <td>{levels(s)}</td>
+            <td>{statusOf(s)}</td>
+            <td>{s.terms.url ? <a href={s.terms.url} target="_blank" rel="external noopener">{terms(s)}</a> : terms(s)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+
+    <h3 id="catalogue-others">Other trackers, research and reporting</h3>
+    <p class="note">Others who track parts of this ground. Their work is not part of the data, but it is worth reading alongside.</p>
+    <table class="catalogue">
+      <thead><tr><th>Source</th><th>Level</th><th>What it covers</th></tr></thead>
+      <tbody>
+        {pointedTo.map((s) => (
+          <tr>
+            <td><a href={s.url} target="_blank" rel="external noopener">{s.name}</a><span class="pub">{s.publisher}</span></td>
+            <td>{levels(s)}</td>
+            <td>{s.description}{s.paywalled ? " Subscription required." : ""}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </section>
+</Site>
+
+<style>
+  h3 { font-size: 16px; margin: 26px 0 8px; }
+  .catalogue { width: 100%; max-width: 60rem; border-collapse: collapse; font-size: 14px; }
+  .catalogue th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12.5px; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--rule-strong); }
+  .catalogue td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .catalogue td:first-child { width: 38%; }
+  .catalogue td:first-child a { font-weight: 600; color: var(--ink); text-decoration-color: var(--ink-soft); }
+  .pub { display: block; color: var(--muted); font-size: 13px; }
+  @media (max-width: 640px) { .catalogue th:nth-child(2), .catalogue td:nth-child(2) { display: none; } }
+</style>
