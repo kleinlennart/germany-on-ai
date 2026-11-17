@@ -1,3 +1,4 @@
+from germany_on_ai.schema.record import SourceRecord, canonical_json, content_hash
 from germany_on_ai.schema.source import (
     Access,
     Arena,
@@ -15,7 +16,10 @@ __all__ = [
     "Coverage",
     "Kind",
     "Source",
+    "SourceRecord",
     "Status",
     "Terms",
     "UpdateFrequency",
+    "canonical_json",
+    "content_hash",
 ]

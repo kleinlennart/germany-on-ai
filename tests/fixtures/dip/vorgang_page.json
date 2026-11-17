@@ -1,0 +1,215 @@
+{
+ "numFound": 2,
+ "documents": [
+  {
+   "id": "341581",
+   "beratungsstand": "Abgelehnt",
+   "vorgangstyp": "Entschließungsantrag BT",
+   "sachgebiet": [
+    "Innere Sicherheit",
+    "Verteidigung"
+   ],
+   "typ": "Vorgang",
+   "wahlperiode": 21,
+   "initiative": [
+    "Fraktion BÜNDNIS 90/DIE GRÜNEN"
+   ],
+   "aktualisiert": "2026-11-17T13:55:28+01:00",
+   "vorgang_verlinkung": [
+    {
+     "verweisung": "Gesetz",
+     "titel": "Gesetz zur Reform des Nachrichtendienstrechts",
+     "id": "338341",
+     "wahlperiode": 21,
+     "gesta": "B057"
+    }
+   ],
+   "deskriptor": [
+    {
+     "fundstelle": true,
+     "name": "BND-Gesetz",
+     "typ": "Rechtsmaterialien"
+    },
+    {
+     "fundstelle": false,
+     "name": "Biometrie",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": true,
+     "name": "Bundesamt für Verfassungsschutz",
+     "typ": "Institutionen"
+    },
+    {
+     "fundstelle": true,
+     "name": "Bundesnachrichtendienst",
+     "typ": "Institutionen"
+    },
+    {
+     "fundstelle": true,
+     "name": "Bundesverfassungsschutzgesetz",
+     "typ": "Rechtsmaterialien"
+    },
+    {
+     "fundstelle": false,
+     "name": "Datenverarbeitung",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Gefahrenabwehr",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": true,
+     "name": "Gesetz zur Reform des Nachrichtendienstrechts",
+     "typ": "Rechtsmaterialien"
+    },
+    {
+     "fundstelle": false,
+     "name": "Künstliche Intelligenz",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Nachrichtendienst",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Nachrichtendienstliche Mittel",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Parlamentarische Kontrolle",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Personenbezogene Daten",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Spionage",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": true,
+     "name": "UKRat-Gesetz",
+     "typ": "Rechtsmaterialien"
+    },
+    {
+     "fundstelle": true,
+     "name": "Unabhängiger Kontrollrat",
+     "typ": "Institutionen"
+    },
+    {
+     "fundstelle": false,
+     "name": "Verfassungsschutz",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Zuständigkeit",
+     "typ": "Sachbegriffe"
+    }
+   ],
+   "titel": "Entschließungsantrag zum Gesetz zur Reform des Nachrichtendienstrechts",
+   "datum": "2026-11-13"
+  },
+  {
+   "id": "340936",
+   "abstract": "(insgesamt 21 Einzelfragen)",
+   "beratungsstand": "Beantwortet",
+   "vorgangstyp": "Kleine Anfrage",
+   "sachgebiet": [
+    "Innere Sicherheit",
+    "Medien, Kommunikation und Informationstechnik",
+    "Staat und Verwaltung"
+   ],
+   "typ": "Vorgang",
+   "wahlperiode": 21,
+   "initiative": [
+    "Fraktion der AfD"
+   ],
+   "aktualisiert": "2026-11-13T15:47:19+01:00",
+   "deskriptor": [
+    {
+     "fundstelle": false,
+     "name": "Bundesamt für Sicherheit in der Informationstechnik",
+     "typ": "Institutionen"
+    },
+    {
+     "fundstelle": false,
+     "name": "Bundesbehörde",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Bundesministerium des Innern",
+     "typ": "Institutionen"
+    },
+    {
+     "fundstelle": false,
+     "name": "Bundesministerium für Digitales und Staatsmodernisierung",
+     "typ": "Institutionen"
+    },
+    {
+     "fundstelle": false,
+     "name": "Bundesmittel",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Externe Beratung",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Gefahrenabwehr",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": true,
+     "name": "Generative KI",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": true,
+     "name": "IT-Kriminalität",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Informationssicherheit",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Künstliche Intelligenz",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Nationales Cyber-Abwehrzentrum",
+     "typ": "Institutionen"
+    },
+    {
+     "fundstelle": false,
+     "name": "Personalausstattung",
+     "typ": "Sachbegriffe"
+    },
+    {
+     "fundstelle": false,
+     "name": "Schadsoftware",
+     "typ": "Sachbegriffe"
+    }
+   ],
+   "titel": "Künstliche Intelligenz bei Cyberangriffen und technische Vorfallunterstützung des Bundes",
+   "datum": "2026-11-13"
+  }
+ ],
+ "cursor": "c1"
+}

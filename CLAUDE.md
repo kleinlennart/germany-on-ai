@@ -22,3 +22,7 @@ An open dataset of Germany's engagement on AI (parliament, government, EU, inter
 - Python via `uv` (`uv run`, `uv add`). Lint and format with ruff.
 - Comments explain why, briefly, only where the code leaves it unclear.
 - Tests are offline: ingesters are tested against recorded fixtures in `tests/fixtures/`.
+
+## Notebooks
+
+Render with `cd notebooks && uv run quarto render`. Read results from `notebooks/_output/<name>.md`: Markdown with tables, without code. The HTML version is for people. Start notebooks with `notebook.setup()` from `germany_on_ai.notebook` so DataFrames render as Markdown tables.

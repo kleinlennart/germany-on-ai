@@ -1,0 +1,38 @@
+{
+  "spec_url": "https://search.dip.bundestag.de/api/v1/openapi.yaml",
+  "version": "1.5",
+  "sha256": "95b2e852649cff71021de2497628c3158070ecbfc9dbd15651ae485b7379c6ff",
+  "checked": "2026-11-17",
+  "parameters_used": {
+    "/vorgang": [
+      "cursor",
+      "f.aktualisiert.start",
+      "f.deskriptor",
+      "f.titel",
+      "f.wahlperiode"
+    ],
+    "/vorgangsposition": [
+      "cursor",
+      "f.vorgang"
+    ],
+    "/aktivitaet": [
+      "cursor",
+      "f.vorgangsposition_id"
+    ],
+    "/drucksache": [
+      "cursor",
+      "f.id"
+    ],
+    "/person": [
+      "cursor",
+      "f.id"
+    ],
+    "/plenarprotokoll": [
+      "cursor",
+      "f.aktualisiert.start",
+      "f.wahlperiode",
+      "f.zuordnung"
+    ],
+    "/plenarprotokoll-text/{id}": []
+  }
+}

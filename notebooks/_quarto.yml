@@ -1,0 +1,16 @@
+# Each notebook renders twice: HTML for people, GitHub-flavoured Markdown for agents
+# (no code, tables as Markdown), both into _output/.
+project:
+  type: default
+  output-dir: _output
+
+jupyter: python3
+
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+  gfm:
+    echo: false
+    warning: false

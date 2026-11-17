@@ -24,6 +24,7 @@
   docs:
     - https://dip.bundestag.de/%C3%BCber-dip/hilfe/api
     - https://search.dip.bundestag.de/api/v1/openapi.yaml
+    - https://dip.bundestag.de/documents/informationsblatt_zur_dip_api.pdf
     - https://www.bundestag.de/impressum
 
 - id: bundestag-hearings

@@ -1,0 +1,31 @@
+# What is downloaded from DIP. This decides only what is fetched, not how records are
+# analysed or labelled. Bump `version` when anything here changes.
+version: 1
+
+# Electoral terms: every term since the one in which the federal AI strategy (Nov 2018)
+# and the Bundestag's Enquete Commission on AI (2018) were set up.
+wahlperioden: [19, 20, 21]
+
+vorgang:
+  # DIP thesaurus descriptors; "Maschinelles Lernen" resolves to "Künstliche Intelligenz".
+  deskriptor:
+    - Künstliche Intelligenz
+    - Generative KI
+    - Autonomes Waffensystem
+  # Title search catches items not yet indexed with descriptors.
+  titel:
+    - Künstliche Intelligenz
+    - KI
+
+# All Bundestag and Bundesrat plenary transcripts of these terms are downloaded.
+# Paragraphs matching any of these regular expressions are kept as passages.
+passages:
+  terms:
+    - '\bKI\b'
+    - '[Kk]ünstliche[nrs]? Intelligenz'
+    - '[Mm]aschinelle[ns]? Lernen'
+    - '[Aa]utonome[nrs]? Waffen'
+    - '\b[Cc]hatbots?\b'
+    - '\bChatGPT\b'
+    - '[Ss]prachmodell'
+    - '[Dd]eepfakes?'

@@ -8,6 +8,8 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "duckdb>=2.0.0",
+    "httpx>=0.28.1",
     "pydantic>=2.14.3",
     "pyyaml>=6.0.3",
 ]
@@ -21,6 +23,9 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "ipykernel>=7.4.0",
+    "nbclient>=0.11.0",
+    "pandas>=3.1.1",
     "pre-commit>=4.7.0",
     "pytest>=9.2.0",
     "ruff>=0.17.5",
@@ -33,6 +38,8 @@ extend-exclude = [".agents", ".claude"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+# German source text uses typographic dashes and quotes; passages must stay verbatim.
+ignore = ["RUF001", "RUF003"]
 
 [tool.ty.src]
 include = ["src", "tests"]

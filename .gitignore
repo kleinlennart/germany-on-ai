@@ -280,3 +280,7 @@ rsconnect/
 src/*.o
 src/*.so
 src/*.dll
+
+# Rendered notebooks
+notebooks/_output/
+.quarto/

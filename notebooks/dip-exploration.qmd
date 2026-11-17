@@ -1,0 +1,87 @@
+---
+title: "DIP: what is there"
+subtitle: "Exploration of the Bundestag and Bundesrat records fetched so far"
+---
+
+This notebook describes the DIP records selected by the fetch filter (`data/fetch/dip.yaml`):
+how many there are, what kinds, and how much of the selection looks off-topic. It
+informs how AI relevance and topics will be labelled later. Run `uv run germany-on-ai build`
+first; the notebook reads `build/germany_on_ai.duckdb`.
+
+```{python}
+import duckdb
+
+from germany_on_ai import notebook
+
+notebook.setup()
+db = duckdb.connect("../build/germany_on_ai.duckdb", read_only=True)
+tables = [t for (t,) in db.sql("SELECT table_name FROM duckdb_tables() ORDER BY 1").fetchall()]
+db.sql("""
+    SELECT table_name AS "table", estimated_size AS records
+    FROM duckdb_tables() ORDER BY table_name
+""").df()
+```
+
+## Proceedings by electoral term and type
+
+```{python}
+db.sql("""
+    PIVOT (SELECT data->>'vorgangstyp' AS type, 'WP ' || (data->>'wahlperiode') AS term
+           FROM dip_vorgang)
+    ON term USING count(*) GROUP BY type ORDER BY type
+""").df()
+```
+
+## Which query found what
+
+Each proceeding can match several parts of the fetch filter. Overlap shows how much each
+descriptor or title term adds.
+
+```{python}
+db.sql("""
+    WITH flags AS (
+        SELECT
+            id,
+            list_contains(json_extract_string(data, '$.deskriptor[*].name'),
+                          'Künstliche Intelligenz') AS ai_descriptor,
+            list_contains(json_extract_string(data, '$.deskriptor[*].name'),
+                          'Generative KI') AS genai_descriptor,
+            regexp_matches(data->>'titel', '\\bKI\\b|[Kk]ünstliche')  AS ai_title
+        FROM dip_vorgang
+    )
+    SELECT ai_descriptor, genai_descriptor, ai_title, count(*) AS n
+    FROM flags GROUP BY ALL ORDER BY n DESC
+""").df()
+```
+
+## Possible noise: neither AI descriptor nor AI title
+
+These came in through the broad "Autonomes Waffensystem" descriptor (which DIP expands to
+military robots and drones). A sample, to judge how much needs filtering later.
+
+```{python}
+db.sql("""
+    SELECT * FROM (
+        SELECT data->>'wahlperiode' AS term, data->>'vorgangstyp' AS type,
+               data->>'titel' AS title
+        FROM dip_vorgang
+        WHERE NOT list_contains(json_extract_string(data, '$.deskriptor[*].name'),
+                                'Künstliche Intelligenz')
+          AND NOT regexp_matches(data->>'titel', '\\bKI\\b|[Kk]ünstliche')
+    ) USING SAMPLE 20 ROWS (reservoir, 42)
+""").df()
+```
+
+## Plenary passages over time
+
+```{python}
+if "dip_passage" in tables:
+    display(db.sql("""
+        SELECT substr(data->>'datum', 1, 4) AS year, data->>'herausgeber' AS house,
+               count(*) AS passages,
+               count(DISTINCT data->>'plenarprotokoll_id') AS sessions
+        FROM dip_passage GROUP BY ALL ORDER BY year, house
+    """).df())
+else:
+    print("No passages yet: transcripts have not been ingested.")
+```
