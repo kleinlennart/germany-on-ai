@@ -1,0 +1,49 @@
+---
+// PROTOTYPE: an interpellation's numbered questions, each opening to the government's
+// answer. Quoted in German as published; long answers end with a link to the paper.
+import type { Answer } from "../lib/tracker";
+
+type Props = { answer: Answer; limit?: number; chars?: number; open?: boolean };
+const { answer, limit = Infinity, chars = 6000, open = false } = Astro.props as Props;
+const byNumber = new Map(answer.pairs.map((p) => [p.n, p]));
+
+// Cut at the last sentence end before the limit, so a quote never stops mid-sentence.
+const clip = (text: string) => {
+  if (text.length <= chars) return { text, clipped: false };
+  const cut = text.slice(0, chars);
+  const end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("? "));
+  return { text: cut.slice(0, end > chars / 2 ? end + 1 : chars), clipped: true };
+};
+const shown = answer.pairs.slice(0, limit);
+---
+<ol class="qa" lang="de">
+  {shown.map((p) => {
+    const covering = p.with ? byNumber.get(p.with) : undefined;
+    const { text, clipped } = clip(covering ? covering.a : p.a);
+    return (
+      <li id={`a${answer.id}-${p.n}`}>
+        <details open={open}>
+          <summary>{p.q}</summary>
+          <div class="answer">
+            {covering && <p class="joint" lang="en">Answered together with question {covering.n}:</p>}
+            <p>{text}{clipped && <>{" "}<a lang="en" href={answer.pdf} target="_blank" rel="external noopener">Continues in the printed paper</a></>}</p>
+          </div>
+        </details>
+      </li>
+    );
+  })}
+</ol>
+
+<style>
+  .qa { list-style: none; padding: 0; margin: 0; max-width: 52rem; }
+  .qa li { border-bottom: 1px solid var(--rule); }
+  .qa li:first-child { border-top: 1px solid var(--rule); }
+  summary { cursor: pointer; padding: 8px 0 8px 1.1rem; position: relative; font-size: 15.5px; line-height: 1.45; color: var(--ink); list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "+"; position: absolute; left: 0; color: var(--muted); font-weight: 600; }
+  details[open] > summary::before { content: "\2212"; }
+  summary:hover { text-decoration: underline; text-decoration-color: var(--rule-strong); text-underline-offset: 3px; }
+  .answer { padding: 0 0 12px 1.1rem; font-size: 15px; line-height: 1.6; color: var(--ink-soft); }
+  .answer p { margin: 0 0 6px; }
+  .joint { color: var(--muted); font-size: 13.5px; }
+</style>

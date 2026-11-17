@@ -9,6 +9,71 @@ const records = readdirSync(dir)
 
 const names = (d, typ) => (d.deskriptor ?? []).filter((x) => !typ || x.typ === typ).map((x) => x.name);
 
+// Parties of the members who started each proceeding: from activities (written and oral
+// questions, interpellations, motions), whose titles read "Name, MdB, <group>".
+// Only the activity that starts a proceeding of that type counts (a later resolution motion
+// on someone else's bill does not make its tabler the initiator).
+const STARTS = {
+  "Schriftliche Frage": "Frage",
+  "Mündliche Frage": "Frage",
+  "Kleine Anfrage": "Kleine Anfrage",
+  "Große Anfrage": "Große Anfrage",
+  Antrag: "Antrag",
+  "Entschließungsantrag BT": "Entschließungsantrag",
+  Gesetzgebung: "Gesetzentwurf",
+};
+const typeOf = new Map(records.map(({ data }) => [data.id, data.vorgangstyp]));
+const GROUP = {
+  "BÜNDNIS 90/DIE GRÜNEN": "Greens", "DIE LINKE": "Die Linke", "Die Linke": "Die Linke", "Die Linke (Gruppe)": "Die Linke",
+  "CDU/CSU": "CDU/CSU", SPD: "SPD", AfD: "AfD", FDP: "FDP", BSW: "BSW", fraktionslos: "Non-attached",
+};
+const memberParties = new Map();
+const activityDir = "../../data/records/dip/aktivitaet";
+for (const f of readdirSync(activityDir).filter((f) => f.endsWith(".jsonl"))) {
+  for (const line of readFileSync(join(activityDir, f), "utf8").trim().split("\n")) {
+    const a = JSON.parse(line).data;
+    const m = a.titel.match(/, MdB, (.+)$/);
+    if (!m) continue;
+    const party = GROUP[m[1].trim()] ?? m[1].trim();
+    for (const v of a.vorgangsbezug ?? []) {
+      if (STARTS[typeOf.get(v.id)] !== a.aktivitaetsart) continue;
+      if (!memberParties.has(v.id)) memberParties.set(v.id, new Set());
+      memberParties.get(v.id).add(party);
+    }
+  }
+}
+
+// Steps of each proceeding (with documents) and the people involved, for record pages.
+const steps = new Map();
+const stepDir = "../../data/records/dip/vorgangsposition";
+for (const f of readdirSync(stepDir).filter((f) => f.endsWith(".jsonl"))) {
+  for (const line of readFileSync(join(stepDir, f), "utf8").trim().split("\n")) {
+    const s = JSON.parse(line).data;
+    const fs = s.fundstelle ?? {};
+    const list = steps.get(s.vorgang_id) ?? [];
+    list.push({
+      date: s.datum ?? fs.datum ?? null,
+      step: s.vorgangsposition,
+      document: fs.dokumentnummer ? `${fs.dokumentart === "Plenarprotokoll" ? "Plenary record" : "Printed paper"} ${fs.dokumentnummer}` : null,
+      pdf: fs.pdf_url ?? null,
+      by: (s.ressort ?? []).filter((r) => r.federfuehrend).map((r) => r.titel)[0] ?? null,
+    });
+    steps.set(s.vorgang_id, list);
+  }
+}
+const people = new Map();
+for (const f of readdirSync(activityDir).filter((f) => f.endsWith(".jsonl"))) {
+  for (const line of readFileSync(join(activityDir, f), "utf8").trim().split("\n")) {
+    const a = JSON.parse(line).data;
+    const [name, role, ...rest] = a.titel.split(", ");
+    for (const v of a.vorgangsbezug ?? []) {
+      const list = people.get(v.id) ?? [];
+      list.push({ date: a.datum, activity: a.aktivitaetsart, name, role, affiliation: rest.join(", "), pdf: a.fundstelle?.pdf_url ?? null });
+      people.set(v.id, list);
+    }
+  }
+}
+
 const rows = records.map(({ data: d, source_url, retrieved_at, content_sha256 }) => ({
   id: d.id,
   title: d.titel,
@@ -17,6 +82,9 @@ const rows = records.map(({ data: d, source_url, retrieved_at, content_sha256 })
   date: d.datum ?? null,
   status: d.beratungsstand ?? "–",
   initiators: d.initiative ?? [],
+  memberParties: [...(memberParties.get(d.id) ?? [])].sort(),
+  steps: (steps.get(d.id) ?? []).sort((x, y) => (x.date ?? "").localeCompare(y.date ?? "")),
+  people: (people.get(d.id) ?? []).sort((x, y) => (x.date ?? "").localeCompare(y.date ?? "")),
   subjects: d.sachgebiet ?? [],
   descriptors: names(d, "Sachbegriffe"),
   laws: names(d, "Rechtsmaterialien"),
@@ -116,3 +184,18 @@ console.log(`prepared ${sittingWeeks.length} sitting weeks and ${germanyEvents.l
 
 // Curated events (validated by the Python build, each with an official source).
 writeFileSync("src/data/curated-events.json", readFileSync("../../build/curated_events.json", "utf8"));
+
+// Government answers to interpellations: question-answer pairs, made readable by the
+// Python build (`build/answer_pairs.json`), grouped by printed paper.
+const answers = new Map();
+for (const p of JSON.parse(readFileSync("../../build/answer_pairs.json", "utf8"))) {
+  const a = answers.get(p.drucksache_id) ?? {
+    id: p.drucksache_id, number: p.dokumentnummer, date: p.datum, ministry: p.ressort,
+    vorgangId: p.vorgang_id, title: p.vorgang_titel, type: p.vorgangstyp, pdf: p.pdf_url, pairs: [],
+  };
+  a.pairs.push({ n: p.number, q: p.question, a: p.answer, with: p.answered_with });
+  answers.set(p.drucksache_id, a);
+}
+const answerList = [...answers.values()].sort((x, y) => y.date.localeCompare(x.date) || Number(y.id) - Number(x.id));
+writeFileSync("src/data/answers.json", JSON.stringify(answerList));
+console.log(`prepared ${answerList.length} government answers`);

@@ -5,9 +5,11 @@ import Site from "../layouts/Site.astro";
 import QuarterlyColumns from "../components/charts/QuarterlyColumns.astro";
 import RankedBars from "../components/charts/RankedBars.astro";
 import Timeline from "../components/Timeline.astro";
-import { formatDate } from "../lib/proceedings";
+import AnswerPairs from "../components/AnswerPairs.astro";
+import { formatDate, recordHref } from "../lib/proceedings";
 import {
-  asOf, byOpposition, coverage, currentRate, initiatorBase, initiators, instruments, legislation,
+  answerAskedBy, answerTotals, answeringMinistries, answers, ministryName, recordsAnsweredBy,
+  asOf, byOpposition, coverage, recordsByInstrument, recordsStartedBy, currentRate, initiatorBase, initiators, instruments, legislation,
   previousRate, questionShare, rates, recordsWith, RULE, statusOf, timeline, today, topics, totals,
 } from "../lib/tracker";
 
@@ -24,6 +26,10 @@ const multiple =
     ? `${ratio % 1 >= 0.1 ? "more than " : ""}${words[Math.floor(ratio)] ?? `${Math.floor(ratio)} times`} the rate of`
     : "a higher rate than";
 const next = timeline.upcoming[0];
+const latestAnswers = answers.slice(0, 5);
+const [firstMinistry, secondMinistry] = answeringMinistries;
+const listParties = (parties: string[]) =>
+  parties.length ? parties.join(" and ") : "an institution";
 ---
 <Site title="German AI policy: where things stand | Germany on AI" description="A situation report on German AI policy, updated as parliament and government act.">
   <section class="intro">
@@ -37,7 +43,8 @@ const next = timeline.upcoming[0];
       <a href="#timeline"><strong>{legislation.length} bills</strong></a> touch AI: {settled} and{" "}
       <a href="#open-bills"><strong>{timeline.pending.length} are still open</strong></a>.{" "}
       <a href="#instruments"><strong>{round(questionShare * 100)} percent</strong></a> of proceedings are questions put to the government, and{" "}
-      <a href="#initiators"><strong>opposition groups</strong></a> initiate most of those that name an initiator.
+      <a href="#initiators"><strong>opposition groups</strong></a> started {byOpposition === initiatorBase.members ? "all" : "most"} of those brought by members.{" "}
+      The government has answered <a href="#answers"><strong>{answerTotals.answered} of their {answerTotals.asked} interpellations</strong></a>, question by question.
       {next && (
         <>
           {" "}{next.start <= today ? "Under way now" : "Next on the calendar"}: <a href="#coming-up"><strong>{next.title}</strong></a> ({next.when}).
@@ -63,17 +70,45 @@ const next = timeline.upcoming[0];
 
   <section id="instruments">
     <h2><a class="self" href="#instruments"><span class="ph">{round(questionShare * 100)} percent of this term's AI proceedings</span> <span class="ph">are questions to the government</span></a></h2>
-    <RankedBars items={instruments} label="AI proceedings in the 21st Bundestag by instrument" />
+    <RankedBars items={instruments} label="AI proceedings in the 21st Bundestag by instrument" records={recordsByInstrument} />
     <p class="source">21st Bundestag, {totals.current} proceedings. Source: DIP.</p>
   </section>
 
   <section id="initiators">
-    <h2><a class="self" href="#initiators"><span class="ph">Opposition groups initiate {byOpposition} of the {initiatorBase.named} proceedings</span> <span class="ph">that name an initiator</span></a></h2>
-    <RankedBars items={initiators} label="AI proceedings in the 21st Bundestag by initiator" />
+    <h2><a class="self" href="#initiators">{byOpposition === initiatorBase.members
+        ? <><span class="ph">All {initiatorBase.members} AI proceedings brought by members</span> <span class="ph">came from opposition groups</span></>
+        : <><span class="ph">Opposition groups started {byOpposition} of the {initiatorBase.members} AI proceedings</span> <span class="ph">brought by members</span></>}</a></h2>
+    <RankedBars items={initiators} label="AI proceedings in the 21st Bundestag by initiator" records={recordsStartedBy} />
     <p class="source">
-      A proceeding can have several initiators. Not counted: {initiatorBase.memberQuestions} written and oral questions, which
-      individual members file and which name no group in this data, and {initiatorBase.otherUnnamed} other items without an initiator.
-      Questions will be attributed to groups once speeches and questions are loaded.
+      Members' proceedings (questions, interpellations, motions) count for their parliamentary group; one proceeding can involve several groups.
+      The other {initiatorBase.others} were started by the government, the Bundesrat, EU bodies or committees and count for them.
+    </p>
+  </section>
+
+  <section id="answers">
+    <h2><a class="self" href="#answers"><span class="ph">The government has answered {answerTotals.answered} of {answerTotals.asked} AI interpellations this term,</span> <span class="ph">most often through the {firstMinistry[0]} and the {secondMinistry[0]}</span></a></h2>
+    <p class="note">Members put numbered questions to the government in writing; the lead ministry answers each one in a printed paper. Open a question to read the answer. Questions and answers are quoted in German as published.</p>
+    <h3>Latest answers</h3>
+    <ol class="answers">
+      {latestAnswers.map((a) => (
+        <li>
+          <p class="meta">{formatDate(a.date)}. Asked by {listParties(answerAskedBy(a))}, answered by the {ministryName(a.ministry)}.</p>
+          <h4 lang="de"><a href={`${recordHref(a.vorgangId)}#answers`}>{a.title}</a></h4>
+          <AnswerPairs answer={a} limit={3} chars={900} />
+          <p class="more">
+            <a href={`${recordHref(a.vorgangId)}#answers`}>All {a.pairs.length} questions and answers</a>{" "}
+            <span class="muted">or the</span>{" "}
+            <a href={a.pdf} target="_blank" rel="external noopener">printed paper {a.number}</a>
+          </p>
+        </li>
+      ))}
+    </ol>
+    <h3>Which ministry answers</h3>
+    <RankedBars items={answeringMinistries} label="AI interpellations answered this term by lead ministry" records={recordsAnsweredBy} />
+    <p class="source">
+      {answerTotals.withText} answers with {answerTotals.pairs.toLocaleString("en")} numbered questions, 21st Bundestag, AI proceedings by the rule above.
+      {answerTotals.answered > answerTotals.withText && <>{" "}The text of {answerTotals.answered - answerTotals.withText === 1 ? "one answer is" : `${answerTotals.answered - answerTotals.withText} answers are`} not yet in DIP.{" "}</>}
+      Split into questions and answers by matching each question's wording from the interpellation's own printed paper. Source: DIP.
     </p>
   </section>
 
@@ -105,6 +140,14 @@ const next = timeline.upcoming[0];
 <style>
   .lede a { color: inherit; text-decoration: underline; text-decoration-color: var(--rule-strong); text-underline-offset: 4px; }
   .lede a:hover { text-decoration-color: var(--ink); }
+  .answers { list-style: none; padding: 0; margin: 0 0 28px; }
+  .answers > li { padding: 14px 0 18px; border-top: 1px solid var(--rule-strong); max-width: 52rem; }
+  .answers .meta { margin: 0 0 2px; font-size: 14px; color: var(--muted); }
+  .answers h4 { margin: 0 0 10px; font-size: 18px; line-height: 1.35; font-weight: 600; }
+  .answers h4 a { text-decoration: none; }
+  .answers h4 a:hover { text-decoration: underline; }
+  .answers .more { margin: 8px 0 0; font-size: 14px; }
+  #answers h3 { font-size: 17px; margin: 22px 0 6px; }
   .coverage { max-width: 52rem; display: grid; grid-template-columns: 9rem 1fr; gap: 10px 20px; font-size: 14.5px; }
   .coverage dt { font-weight: 600; }
   .coverage dd { margin: 0; }

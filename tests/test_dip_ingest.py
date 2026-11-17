@@ -40,8 +40,8 @@ def test_documented_parameters_resolves_refs():
     assert documented_parameters(spec) == {"/vorgang": {"f.titel", "cursor"}}
 
 
-def test_answer_ids_pick_current_term_interpellation_answers():
-    from germany_on_ai.ingest.dip.ingest import answer_ids
+def test_interpellation_papers_pair_questions_with_answers():
+    from germany_on_ai.ingest.dip.ingest import interpellation_papers
 
     def step(vorgang, position, typ="Kleine Anfrage", doc="Drucksache", id_="1"):
         return {
@@ -56,8 +56,10 @@ def test_answer_ids_pick_current_term_interpellation_answers():
         step("a", "Kleine Anfrage", id_="10"),  # the questions, not the answer
         step("b", "Antwort", id_="30"),  # earlier term
         step("c", "Antwort", typ="Antrag", id_="40"),  # not an interpellation
+        step("d", "Große Anfrage", typ="Große Anfrage", id_="4"),
         step("d", "Ergänzende Antwort", typ="Große Anfrage", id_="5"),
         step("d", "Ergänzende Antwort", typ="Große Anfrage", id_="5"),  # duplicate
+        step("e", "Antwort", id_="60"),  # no question paper on record
     ]
-    wp_of = {"a": 21, "b": 20, "c": 21, "d": 21}
-    assert answer_ids(positions, wp_of, [21]) == ["5", "20"]
+    wp_of = {"a": 21, "b": 20, "c": 21, "d": 21, "e": 21}
+    assert interpellation_papers(positions, wp_of, [21]) == [("4", "5"), ("10", "20")]

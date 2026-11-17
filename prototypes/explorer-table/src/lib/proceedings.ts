@@ -8,6 +8,8 @@ export type Proceeding = {
   date: string;
   status: string;
   initiators: string[];
+  memberParties: string[]; // groups of the members who started it (from activities)
+  steps: { date: string | null; step: string; document: string | null; pdf: string | null; by: string | null }[];
   subjects: string[];
   descriptors: string[];
   laws: string[];

@@ -5,6 +5,7 @@ import { type Level, type Seed, seeds } from "../data/seeds";
 import curatedEvents from "../data/curated-events.json";
 import euEvents from "../data/eu-events.json";
 import germanyCalendar from "../data/germany-calendar.json";
+import answerData from "../data/answers.json";
 import data from "../data/vorgaenge.json";
 import { formatDate, type Proceeding, recordHref } from "./proceedings";
 
@@ -79,34 +80,29 @@ const QUESTIONS = ["Written questions", "Oral questions", "Minor interpellations
 export const instrumentOf = (p: Proceeding) => INSTRUMENTS[p.type] ?? "Other";
 
 export const instruments = countBy(current, (p) => [instrumentOf(p)]);
+export const recordsByInstrument = (instrument: string) => current.filter((p) => instrumentOf(p) === instrument);
 export const questionShare = current.filter((p) => QUESTIONS.includes(instrumentOf(p))).length / current.length;
 
-// Who initiates: only proceedings that name an initiator (individual MPs' written and
-// oral questions do not, in proceedings data).
-const INITIATORS: Record<string, string> = {
-  "Fraktion der AfD": "AfD",
-  "Fraktion BÜNDNIS 90/DIE GRÜNEN": "Greens",
-  "Fraktion DIE LINKE": "Die Linke",
-  "Fraktion der CDU/CSU": "CDU/CSU",
-  "Fraktion der SPD": "SPD",
+// Who initiates: the parliamentary groups of the members who started a proceeding (from
+// activities); otherwise its institutional initiator (government, Bundesrat, EU, committees).
+const INSTITUTIONS: Record<string, string> = {
   Bundesregierung: "Federal Government",
+  Bundesrat: "Bundesrat",
   Bundestag: "Bundestag (committees and plenary)",
   "Europäische Kommission": "European Commission",
+  "Europäisches Parlament": "European Parliament",
+  "Ausschuss für Forschung, Technologie, Raumfahrt und Technikfolgenabschätzung": "Bundestag research committee",
+  "Bundesbeauftragter für den Datenschutz und die Informationsfreiheit": "Federal Data Protection Commissioner",
 };
-const named = current.filter((p) => p.initiators.length);
-const unnamed = current.filter((p) => !p.initiators.length);
-const MEMBER_QUESTIONS = ["Schriftliche Frage", "Mündliche Frage"];
-export const initiatorBase = {
-  named: named.length,
-  // Written and oral questions are filed by individual members; other items without an
-  // initiator (question time, topical hours, statements) are counted separately.
-  memberQuestions: unnamed.filter((p) => MEMBER_QUESTIONS.includes(p.type)).length,
-  otherUnnamed: unnamed.filter((p) => !MEMBER_QUESTIONS.includes(p.type)).length,
-};
+const memberStarted = current.filter((p) => p.memberParties.length);
+const whoStarted = (p: Proceeding) =>
+  p.memberParties.length ? p.memberParties : p.initiators.map((i) => INSTITUTIONS[i] ?? i);
+export const initiators = countBy(current, whoStarted).slice(0, 8);
+export const recordsStartedBy = (who: string) => current.filter((p) => whoStarted(p).includes(who));
+export const initiatorBase = { members: memberStarted.length, others: current.length - memberStarted.length };
 // Opposition in the 21st Bundestag (coalition of CDU/CSU and SPD since May 2025).
-const OPPOSITION = ["Fraktion der AfD", "Fraktion BÜNDNIS 90/DIE GRÜNEN", "Fraktion DIE LINKE"];
-export const byOpposition = named.filter((p) => p.initiators.some((i) => OPPOSITION.includes(i))).length;
-export const initiators = countBy(named, (p) => p.initiators.map((i) => INITIATORS[i] ?? i)).slice(0, 8);
+const OPPOSITION = ["AfD", "Greens", "Die Linke"];
+export const byOpposition = memberStarted.filter((p) => p.memberParties.some((g) => OPPOSITION.includes(g))).length;
 
 // What AI is discussed with: the documentalists' other subject keywords.
 const GENERIC = new Set(["Künstliche Intelligenz", "Gesetzgebung", "Bundesmittel", "Digitalisierung"]);
@@ -309,3 +305,50 @@ function countBy(items: Proceeding[], keys: (p: Proceeding) => string[]): [strin
 /** Stable anchor for an event, shared by the timeline line and the list below it. */
 export const eventId = (i: TimelineItem) =>
   `ev-${i.start}-${i.title.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").slice(0, 32).replace(/-+$/, "")}`;
+
+// What the government says: its answers to interpellations on AI this term, split into
+// the numbered questions and the answer to each (quoted in German as published).
+export type AnswerPair = { n: number; q: string; a: string; with: number | null };
+export type Answer = {
+  id: string; number: string; date: string; ministry: string | null; vorgangId: string;
+  title: string; type: string; pdf: string; pairs: AnswerPair[];
+};
+// Short English names for the lead ministries (21st term; the 20th-term names that
+// still occur are kept).
+const MINISTRIES: Record<string, string> = {
+  "Bundesministerium für Digitales und Staatsmodernisierung": "Digital Ministry",
+  "Bundesministerium des Innern": "Interior Ministry",
+  "Bundesministerium für Arbeit und Soziales": "Labour Ministry",
+  "Bundesministerium der Verteidigung": "Defence Ministry",
+  "Bundesministerium für Forschung, Technologie und Raumfahrt": "Research Ministry",
+  "Bundesministerium der Justiz und für Verbraucherschutz": "Justice Ministry",
+  "Bundesministerium für Bildung, Familie, Senioren, Frauen und Jugend": "Education and Family Ministry",
+  "Bundesministerium für Landwirtschaft, Ernährung und Heimat": "Agriculture Ministry",
+  "Bundesministerium für Verkehr": "Transport Ministry",
+  "Auswärtiges Amt": "Foreign Office",
+  "Bundesministerium für Wirtschaft und Energie": "Economy Ministry",
+  "Bundesministerium für Wirtschaft und Klimaschutz": "Economy Ministry (until May 2025)",
+  "Bundesministerium der Finanzen": "Finance Ministry",
+  "Bundesministerium für Gesundheit": "Health Ministry",
+  "Beauftr. der Bundesregierung für Kultur und Medien": "Culture Commissioner",
+  "Bundesministerium für Wohnen, Stadtentwicklung und Bauwesen": "Housing Ministry",
+};
+export const ministryName = (m: string | null) => (m ? MINISTRIES[m] ?? m : "Ministry not stated");
+const byId = new Map(current.map((p) => [p.id, p]));
+export const answers = (answerData as Answer[]).filter((a) => byId.has(a.vorgangId));
+export const answersFor = (vorgangId: string) => (answerData as Answer[]).filter((a) => a.vorgangId === vorgangId);
+export const answerAskedBy = (a: Answer) => byId.get(a.vorgangId)?.memberParties ?? [];
+const interpellations = current.filter((p) => ["Kleine Anfrage", "Große Anfrage"].includes(p.type));
+const hasAnswer = (p: Proceeding) => p.steps.some((s) => s.step === "Antwort" || s.step === "Ergänzende Antwort");
+export const answerTotals = {
+  asked: interpellations.length,
+  answered: interpellations.filter(hasAnswer).length,
+  withText: new Set(answers.map((a) => a.vorgangId)).size,
+  pairs: answers.reduce((n, a) => n + a.pairs.length, 0),
+};
+export const answeringMinistries = countBy(
+  answers.map((a) => byId.get(a.vorgangId)!).filter(Boolean),
+  (p) => [...new Set(answers.filter((a) => a.vorgangId === p.id).map((a) => ministryName(a.ministry)))],
+);
+export const recordsAnsweredBy = (ministry: string) =>
+  [...new Set(answers.filter((a) => ministryName(a.ministry) === ministry).map((a) => a.vorgangId))].map((id) => byId.get(id)!);

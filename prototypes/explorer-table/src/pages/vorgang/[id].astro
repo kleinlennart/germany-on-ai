@@ -3,12 +3,43 @@
 import Site from "../../layouts/Site.astro";
 import data from "../../data/vorgaenge.json";
 import { formatDate, ordinal } from "../../lib/proceedings";
+import AnswerPairs from "../../components/AnswerPairs.astro";
+import { answersFor, ministryName } from "../../lib/tracker";
 
 export function getStaticPaths() {
   return data.map((p) => ({ params: { id: p.id }, props: { p } }));
 }
 const { p } = Astro.props;
 const known = new Set(data.map((d) => d.id));
+const answered = answersFor(p.id);
+
+// English labels for DIP's step names; anything unlisted keeps DIP's own wording.
+const STEP: Record<string, string> = {
+  "Kleine Anfrage": "Minor interpellation submitted",
+  "Große Anfrage": "Major interpellation submitted",
+  "Schriftliche Frage": "Written question",
+  "Mündliche Frage": "Oral question",
+  "Antwort": "Government answer",
+  "Ergänzende Antwort": "Supplementary government answer",
+  "Antrag": "Motion tabled",
+  "Gesetzentwurf": "Bill introduced",
+  "Beratung": "Debate in plenary",
+  "1. Beratung": "First reading",
+  "2. Beratung": "Second reading",
+  "3. Beratung": "Third reading",
+  "Beschlussempfehlung und Bericht": "Committee recommendation and report",
+  "Unterrichtung": "Briefing to parliament",
+};
+const ROLE_GROUPS: [string, (a: string) => boolean][] = [
+  ["Asked or tabled by", (a) => ["Frage", "Kleine Anfrage", "Große Anfrage", "Antrag", "Entschließungsantrag", "Gesetzentwurf"].includes(a)],
+  ["Answered by", (a) => a.startsWith("Antwort")],
+  ["Speakers", (a) => a.startsWith("Rede") || a === "Zwischenfrage"],
+];
+const seen = new Set<string>();
+const peopleBy = ROLE_GROUPS.map(([label, match]) => [
+  label,
+  p.people.filter((x) => match(x.activity) && !seen.has(`${label}|${x.name}`) && seen.add(`${label}|${x.name}`)),
+] as const).filter(([, list]) => list.length);
 ---
 <Site title={p.title}>
   <article class="record">
@@ -18,7 +49,6 @@ const known = new Set(data.map((d) => d.id));
     {p.abstract && <p class="abstract">{p.abstract}</p>}
     <dl>
       <dt>Status</dt><dd>{p.status}</dd>
-      <dt>Initiators</dt><dd>{p.initiators.join(", ") || "–"}</dd>
       <dt>Subject areas</dt><dd>{p.subjects.join(", ") || "–"}</dd>
       <dt>Keywords</dt><dd>{p.descriptors.join(", ") || "–"}</dd>
       {p.laws.length > 0 && <><dt>Laws</dt><dd>{p.laws.join("; ")}</dd></>}
@@ -29,6 +59,44 @@ const known = new Set(data.map((d) => d.id));
         ))}</dd></>
       )}
     </dl>
+    {peopleBy.length > 0 && (
+      <section class="people">
+        <h2>People</h2>
+        <dl>
+          {peopleBy.map(([label, list]) => (
+            <><dt>{label}</dt><dd>{list.slice(0, 6).map((x) => x.role === "MdB" ? `${x.name} (${x.affiliation})` : `${x.name}, ${x.affiliation}`).join("; ")}{list.length > 6 && ` and ${list.length - 6} others`}</dd></>
+          ))}
+        </dl>
+      </section>
+    )}
+    {answered.map((a) => (
+      <section class="answers" id="answers">
+        <h2>The government's answer</h2>
+        <p class="muted">
+          {formatDate(a.date)}, {ministryName(a.ministry)}, {a.pairs.length} questions.
+          Quoted in German as published.{" "}
+          <a href={a.pdf} target="_blank" rel="external noopener">Printed paper {a.number}</a>
+        </p>
+        <AnswerPairs answer={a} />
+      </section>
+    ))}
+    {p.steps.length > 0 && (
+      <section class="steps">
+        <h2>Steps</h2>
+        <ol>
+          {p.steps.map((s) => (
+            <li>
+              <span class="when num">{s.date ? formatDate(s.date) : ""}</span>
+              <span>
+                {STEP[s.step] ?? s.step}
+                {s.by && <span class="muted">, {s.by}</span>}
+                {s.pdf && <> <a href={s.pdf} target="_blank" rel="external noopener">{s.document}</a></>}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )}
     <section class="source">
       <h2>Source</h2>
       <p><a href={p.url} target="_blank" rel="external noopener">This proceeding in DIP, the Bundestag's documentation system</a></p>
@@ -46,6 +114,10 @@ const known = new Set(data.map((d) => d.id));
   dt { color: var(--muted); }
   dd { margin: 0; }
   .source { border-top: 1px solid var(--rule); margin-top: 28px; padding-top: 8px; }
+  .people, .steps, .answers { border-top: 1px solid var(--rule); margin-top: 24px; padding-top: 4px; }
+  .people h2, .steps h2, .answers h2, .source h2 { font-size: 18px; }
+  .steps ol { list-style: none; padding: 0; margin: 0; }
+  .steps li { display: grid; grid-template-columns: 7.5rem 1fr; gap: 12px; padding: 5px 0; border-bottom: 1px solid var(--rule); font-size: 15px; }
   .source h2 { font-size: 16px; }
   code { font-size: 12.5px; }
 </style>

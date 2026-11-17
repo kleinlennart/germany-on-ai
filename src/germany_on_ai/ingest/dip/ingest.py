@@ -12,7 +12,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict
 
 from germany_on_ai import store
-from germany_on_ai.ingest.dip import transcripts
+from germany_on_ai.ingest.dip import answers, transcripts
 from germany_on_ai.ingest.dip.client import DipClient, Params
 from germany_on_ai.schema import SourceRecord
 
@@ -135,20 +135,27 @@ INTERPELLATIONS = ("Kleine Anfrage", "Große Anfrage")
 ANSWERS = ("Antwort", "Ergänzende Antwort")
 
 
-def answer_ids(
+def interpellation_papers(
     positions: Iterable[dict[str, Any]], wp_of: dict[str, int], terms: list[int]
-) -> list[str]:
-    """Ids of the printed papers answering interpellations in these terms."""
+) -> list[tuple[str, str]]:
+    """(question paper id, answer paper id) for each answered interpellation in these
+    terms. A supplementary answer pairs with the same question paper."""
+    questions, answered = {}, []
+    for p in positions:
+        fundstelle = p.get("fundstelle") or {}
+        if (
+            p.get("vorgangstyp") not in INTERPELLATIONS
+            or fundstelle.get("dokumentart") != "Drucksache"
+            or wp_of.get(p["vorgang_id"]) not in terms
+        ):
+            continue
+        if p.get("vorgangsposition") in INTERPELLATIONS:
+            questions[p["vorgang_id"]] = str(fundstelle["id"])
+        elif p.get("vorgangsposition") in ANSWERS:
+            answered.append((p["vorgang_id"], str(fundstelle["id"])))
     return sorted(
-        {
-            str(p["fundstelle"]["id"])
-            for p in positions
-            if p.get("vorgangstyp") in INTERPELLATIONS
-            and p.get("vorgangsposition") in ANSWERS
-            and (p.get("fundstelle") or {}).get("dokumentart") == "Drucksache"
-            and wp_of.get(p["vorgang_id"]) in terms
-        },
-        key=int,
+        {(questions[v], a) for v, a in answered if v in questions},
+        key=lambda pair: int(pair[1]),
     )
 
 
@@ -162,6 +169,10 @@ def by_numeric_id(record: SourceRecord) -> int:
 
 def by_position_in_transcript(record: SourceRecord) -> tuple[int, int]:
     return int(record.data["plenarprotokoll_id"]), record.data["start"]
+
+
+def by_question(record: SourceRecord) -> tuple[int, int]:
+    return int(record.data["drucksache_id"]), record.data["number"]
 
 
 def store_records(
@@ -247,12 +258,27 @@ def run(client: DipClient, *, full: bool) -> dict[str, store.WriteStats]:
         replace=lambda r: r.data["plenarprotokoll_id"] in refreshed,
     )
 
-    # Government answers to this term's interpellations: full texts into the cache, for
-    # question-answer pairs and the release file.
-    for drucksache_id in answer_ids(
+    # Government answers to this term's interpellations, split into question-answer
+    # pairs with the help of the question paper. Answers DIP has no text for yet are
+    # picked up by a later run.
+    pairs, answered = [], set()
+    for question_id, answer_id in interpellation_papers(
         positions, wp_of, fetch_filter.fulltext_wahlperioden
     ):
-        client.get(f"drucksache-text/{drucksache_id}")
+        answer = client.get(f"drucksache-text/{answer_id}")
+        if not answer.get("text"):
+            continue
+        question = client.get(f"drucksache-text/{question_id}")
+        pairs += answers.answer_pairs(answer, question.get("text"))
+        answered.add(answer_id)
+    stats["answer_pair"] = store_records(
+        "answer_pair",
+        pairs,
+        started,
+        sort_key=by_question,
+        # An answer's pairs are replaced as a set, like a transcript's passages.
+        replace=lambda r: r.data["drucksache_id"] in answered,
+    )
 
     if not client.offline:
         write_state(state | {"vorgang": started.isoformat()})

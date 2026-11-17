@@ -10,6 +10,7 @@ from pathlib import Path
 import duckdb
 
 from germany_on_ai import catalogue, store
+from germany_on_ai.ingest.dip import answers
 
 BUILD_DIR = Path("build")
 RECORD_COLUMNS = {
@@ -34,6 +35,11 @@ def record_tables(records_dir: Path) -> dict[str, list[Path]]:
     return tables
 
 
+def write_json(path: Path, value: object) -> None:
+    text = json.dumps(value, ensure_ascii=False, indent=2) + "\n"
+    path.write_text(text, encoding="utf-8")
+
+
 def build(
     records_dir: Path = store.RECORDS_DIR,
     catalogue_path: Path = catalogue.CATALOGUE_PATH,
@@ -48,12 +54,18 @@ def build(
     catalogue_json = out_dir / "catalogue.json"
     catalogue.export(catalogue.load(catalogue_path), catalogue_json)
     events = sorted(catalogue.load_curated_events(), key=lambda e: (e.date, e.id))
-    (out_dir / "curated_events.json").write_text(
-        json.dumps(
-            [e.model_dump(mode="json") for e in events], ensure_ascii=False, indent=2
-        )
-        + "\n",
-        encoding="utf-8",
+    write_json(
+        out_dir / "curated_events.json", [e.model_dump(mode="json") for e in events]
+    )
+    # Question-answer pairs as readable text for the site; the verbatim text and its
+    # offsets stay in the records and the Parquet export.
+    write_json(
+        out_dir / "answer_pairs.json",
+        [
+            answers.for_display(r.data) | {"source_url": r.source_url}
+            for path in sorted((records_dir / "dip" / "answer_pair").glob("*.jsonl"))
+            for r in store.read(path)
+        ],
     )
 
     counts = {}
