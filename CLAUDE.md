@@ -1,4 +1,4 @@
-# Germany on the Record: AI
+# Germany on AI
 
 An open dataset of Germany's engagement on AI (parliament, government, EU, international forums), published as a static explorer and a versioned report.
 
