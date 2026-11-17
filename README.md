@@ -15,7 +15,7 @@ Status: early development.
 - Interpretation is kept separate from the record ([ADR 0001](docs/adr/0001-three-data-layers.md)).
 - Builds are reproducible ([ADR 0003](docs/adr/0003-deterministic-builds.md)).
 
-Vocabulary: [GLOSSARY.md](GLOSSARY.md). Decisions: [docs/adr/](docs/adr/).
+Vocabulary: [docs/GLOSSARY.md](docs/GLOSSARY.md). Decisions: [docs/adr/](docs/adr/).
 
 ## Development
 

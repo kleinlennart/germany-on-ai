@@ -7,7 +7,10 @@ authors = [
     { name = "kleinlennart", email = "31488915+kleinlennart@users.noreply.github.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "pydantic>=2.14.3",
+    "pyyaml>=6.0.3",
+]
 
 [project.scripts]
 germany-on-ai = "germany_on_ai:main"
@@ -19,9 +22,10 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "pre-commit>=4.7.0",
-    "pyright>=1.1.414",
     "pytest>=9.2.0",
     "ruff>=0.17.5",
+    "ty>=0.0.105",
+    "types-pyyaml>=6.0.12.20261113",
 ]
 
 [tool.ruff]
@@ -30,9 +34,8 @@ extend-exclude = [".agents", ".claude"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
 
-[tool.pyright]
+[tool.ty.src]
 include = ["src", "tests"]
-typeCheckingMode = "standard"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

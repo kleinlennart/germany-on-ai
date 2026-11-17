@@ -1,0 +1,542 @@
+# Source catalogue: every source the project ingests or points to.
+# Schema: src/germany_on_ai/schema/source.py. Check with `uv run germany-on-ai catalogue`.
+
+# --- Parliament -------------------------------------------------------------
+
+- id: dip
+  name: DIP (Documentation and Information System for Parliamentary Materials)
+  name_original: Dokumentations- und Informationssystem für Parlamentsmaterialien
+  publisher: Deutscher Bundestag
+  url: https://dip.bundestag.de
+  description: Proceedings, printed papers, plenary transcripts and persons for the Bundestag and Bundesrat, with full text.
+  kind: primary
+  arenas: [domestic]
+  access: api
+  status: planned
+  languages: [de]
+  update_frequency: daily
+  terms:
+    url: https://dip.bundestag.de/%C3%BCber-dip/nutzungsbedingungen
+    notes: >-
+      Per the Bundestag Impressum, printed papers and plenary transcripts are official works without
+      copyright (§ 5 UrhG), subject to the change prohibition (§ 62) and source attribution (§ 63).
+      DIP's own terms page is client-rendered and not yet read; check by hand.
+  docs:
+    - https://dip.bundestag.de/%C3%BCber-dip/hilfe/api
+    - https://search.dip.bundestag.de/api/v1/openapi.yaml
+    - https://www.bundestag.de/impressum
+
+- id: bundestag-hearings
+  name: Bundestag committee hearings
+  publisher: Deutscher Bundestag
+  url: https://www.bundestag.de
+  description: Committee hearing pages with invited experts and their written statements.
+  kind: primary
+  arenas: [domestic]
+  access: scrape
+  status: planned
+  languages: [de]
+  terms:
+    licence: No open licence; private use only
+    url: https://www.bundestag.de/impressum
+    verified: 2026-11-17
+    notes: Experts' written statements are third-party works; short excerpts and links only.
+  raw_publishable: false
+
+- id: open-discourse
+  name: Open Discourse
+  publisher: Open Discourse
+  url: https://opendiscourse.de
+  description: Every Bundestag plenary speech since 1949 with speaker metadata, as a research dataset.
+  kind: tracker
+  arenas: [domestic]
+  access: dataset
+  status: referenced
+  reason: DIP covers the period in scope; kept as a reference for historical speeches.
+  languages: [de]
+  terms:
+    notes: >-
+      Site releases data for use and reuse and asks for citation (Richter et al. 2020,
+      doi:10.7910/DVN/FIKIBO). Code is MIT; data licence not found (Dataverse record unreadable).
+      Project is no longer under active development.
+
+# --- Lobbying and members ---------------------------------------------------
+
+- id: lobbyregister
+  name: Lobby Register
+  name_original: Lobbyregister
+  publisher: Deutscher Bundestag
+  url: https://www.lobbyregister.bundestag.de
+  description: Registered interest representatives, the regulatory projects they target and the lead ministries.
+  kind: primary
+  arenas: [domestic]
+  access: api
+  status: planned
+  languages: [de]
+  terms:
+    url: https://www.lobbyregister.bundestag.de/informationen-und-hilfe/open-data-1049716
+    notes: >-
+      Open-data page and FAQ name no licence. The site uses the Bundestag Impressum, whose general
+      rule allows private use only, but it does not say whether that covers register data.
+      Clarify with the Bundestag before publishing raw register data.
+  pii_fields:
+    - names of persons entrusted with interest representation
+    - revolving-door information on named persons
+  docs:
+    - https://www.lobbyregister.bundestag.de/informationen-und-hilfe/open-data-1049716
+
+- id: lobbyregister-backup
+  name: Lobby Register daily backups
+  publisher: jschibberges (GitHub)
+  url: https://github.com/jschibberges/lobbyregister_data
+  description: Daily snapshots of the Lobby Register, for changes over time.
+  kind: tracker
+  arenas: [domestic]
+  access: dataset
+  status: referenced
+  reason: Use for historical snapshots to be decided when the Lobby Register ingester is built.
+  languages: [de]
+
+- id: abgeordnetenwatch
+  name: abgeordnetenwatch.de
+  publisher: Parlamentwatch e.V.
+  url: https://www.abgeordnetenwatch.de
+  description: Members of parliament, committee memberships, votes and side jobs.
+  kind: tracker
+  arenas: [domestic]
+  access: api
+  status: planned
+  languages: [de]
+  terms:
+    licence: CC0 1.0
+    url: https://www.abgeordnetenwatch.de/api
+    verified: 2026-11-17
+    notes: Fair-use limits of 30 requests per minute per IP and at most one request per second.
+  raw_publishable: true
+  docs:
+    - https://www.abgeordnetenwatch.de/api
+
+- id: integrity-watch-eu
+  name: Integrity Watch EU
+  publisher: Transparency International EU
+  url: https://integritywatch.eu
+  description: European Commission lobby meetings and the EU Transparency Register.
+  kind: tracker
+  arenas: [eu]
+  access: none
+  status: referenced
+  reason: Context on EU-level lobbying; linked, not ingested.
+  languages: [en]
+
+# --- Government --------------------------------------------------------------
+
+- id: bundesregierung-press-conferences
+  name: Government press conferences
+  name_original: Regierungspressekonferenz
+  publisher: Press and Information Office of the Federal Government
+  url: https://www.bundesregierung.de
+  description: Full transcripts of the government press conferences, where ministry spokespeople answer questions, including on AI.
+  kind: primary
+  arenas: [domestic, international]
+  access: scrape
+  status: planned
+  languages: [de]
+  terms:
+    url: https://www.bundesregierung.de/breg-de/impressum
+    notes: German and English legal notices state no licence or reuse rule for texts; no separate terms page exists.
+
+- id: bundesregierung-chancellor-week
+  name: The Chancellor's week
+  name_original: Woche des Kanzlers
+  publisher: Press and Information Office of the Federal Government
+  url: https://www.bundesregierung.de/breg-de/aktuelles/woche-des-kanzlers-2348738
+  description: The Chancellor's main appointments for the week ahead.
+  kind: primary
+  arenas: [domestic, international]
+  access: scrape
+  status: planned
+  update_frequency: weekly
+  languages: [de]
+
+- id: auswaertiges-amt
+  name: Federal Foreign Office newsroom
+  publisher: Auswärtiges Amt
+  url: https://www.auswaertiges-amt.de/en/newsroom
+  description: Ministers' speeches and statements, including at the UN General Assembly.
+  kind: primary
+  arenas: [international]
+  access: scrape
+  status: planned
+  languages: [de, en]
+  terms:
+    licence: No open licence; all rights reserved
+    url: https://www.auswaertiges-amt.de/de/impressum-node
+    verified: 2026-11-17
+    notes: The open-data API permits reuse only of travel advice, mission addresses and country names. Speeches enter as short excerpts with links.
+  raw_publishable: false
+
+- id: german-un-mission-ny
+  name: Permanent Mission of Germany to the United Nations, New York
+  publisher: Auswärtiges Amt
+  url: https://new-york-un.diplo.de
+  description: Official German statements at the UN.
+  kind: primary
+  arenas: [international]
+  access: scrape
+  status: planned
+  languages: [en, de]
+  terms:
+    licence: No open licence; all rights reserved
+    url: https://new-york-un.diplo.de/un-en/impressum
+    verified: 2026-11-17
+  raw_publishable: false
+
+- id: bundeshaushalt
+  name: Federal budget
+  publisher: Federal Ministry of Finance
+  url: https://www.bundeshaushalt.de
+  description: Budget lines and special funds related to AI.
+  kind: primary
+  arenas: [domestic]
+  access: manual
+  status: planned
+  languages: [de]
+
+- id: foerderkatalog
+  name: Federal funding catalogue
+  name_original: Förderkatalog des Bundes
+  publisher: DLR-IP on behalf of the Federal Ministry of Research, Technology and Space
+  url: https://foerderportal.bund.de/foekat
+  description: More than 110,000 federally funded research projects, filterable for AI.
+  kind: primary
+  arenas: [domestic]
+  access: scrape
+  status: planned
+  languages: [de]
+  terms:
+    url: https://foerderportal.bund.de/ip.html
+    notes: >-
+      Portal Impressum says "Alle Rechte vorbehalten"; whether it covers the catalogue data is
+      unclear, and the catalogue itself is client-rendered.
+
+- id: foerderdatenbank
+  name: Federal funding database
+  name_original: Förderdatenbank
+  publisher: Federal Ministry for Economic Affairs and Energy
+  url: https://www.foerderdatenbank.de
+  description: Current federal, state and EU funding programmes.
+  kind: primary
+  arenas: [domestic]
+  access: scrape
+  status: planned
+  languages: [de]
+
+- id: fragdenstaat
+  name: FragDenStaat
+  publisher: Open Knowledge Foundation Deutschland
+  url: https://fragdenstaat.de
+  description: Freedom-of-information requests and released documents, including ministers' calendars.
+  kind: tracker
+  arenas: [domestic]
+  access: manual
+  status: planned
+  languages: [de]
+  terms:
+    licence: CC0 1.0 for user contributions; authority documents unlicensed
+    url: https://fragdenstaat.de/nutzungsbedingungen/
+    verified: 2026-11-17
+    notes: Released authority documents carry no licence; the operator presumes most are official works. Personal data in published content is anonymised.
+
+# --- EU ------------------------------------------------------------------------
+
+- id: eu-council-votes
+  name: Council of the EU voting results
+  publisher: Council of the European Union
+  url: https://www.consilium.europa.eu/en/documents/public-register/votes/
+  description: Member states' votes, abstentions and annexed statements on Council acts.
+  kind: primary
+  arenas: [eu]
+  access: scrape
+  status: planned
+  languages: [en]
+  terms:
+    notes: >-
+      Site refuses automated fetches; check the Council's legal notice by hand. The EU-wide legal
+      notice (CC BY 4.0) does not say whether it covers Council documents.
+
+- id: howtheyvote
+  name: HowTheyVote.eu
+  publisher: HowTheyVote.eu
+  url: https://howtheyvote.eu
+  description: European Parliament roll-call votes by member, including German members.
+  kind: tracker
+  arenas: [eu]
+  access: dataset
+  status: referenced
+  reason: >-
+    ODbL share-alike does not fit this dataset's CC BY 4.0 licence; credited as a resource, and
+    European Parliament data is used instead.
+  languages: [en]
+  terms:
+    licence: ODbL 1.0 (database); DbCL 1.0 (contents)
+    url: https://howtheyvote.eu/data#license
+    verified: 2026-11-17
+    notes: Share-alike; derived databases must stay under ODbL. Attribution required. Photos and vote summaries fall under the European Parliament legal notice.
+
+- id: eeas-un-ny
+  name: EU Delegation to the UN, New York
+  publisher: European External Action Service
+  url: https://www.eeas.europa.eu/delegations/un-new-york
+  description: EU statements at the UN that Germany aligns with.
+  kind: primary
+  arenas: [eu, international]
+  access: scrape
+  status: planned
+  languages: [en]
+  terms:
+    licence: Reuse authorised with acknowledgement (Commission Decision 2011/833/EU)
+    url: https://www.eeas.europa.eu/eeas/legal-notice_en
+    verified: 2026-11-17
+  raw_publishable: true
+
+- id: european-parliament-open-data
+  name: European Parliament open data
+  publisher: European Parliament
+  url: https://data.europarl.europa.eu
+  description: >-
+    The Parliament's open data portal; intended source for roll-call votes by member, including
+    German members. Coverage and format still to be confirmed.
+  kind: primary
+  arenas: [eu]
+  access: api
+  status: planned
+  languages: [en]
+  terms:
+    licence: Reuse authorised with acknowledgement (© European Union – Source European Parliament)
+    url: https://www.europarl.europa.eu/legal-notice/en/
+    notes: >-
+      From the europarl.europa.eu legal notice; whether it governs the open data portal is not yet
+      confirmed (portal is client-rendered).
+
+# --- International -------------------------------------------------------------
+
+- id: un-digital-library
+  name: UN Digital Library
+  publisher: United Nations Dag Hammarskjöld Library
+  url: https://digitallibrary.un.org
+  description: Country-by-country voting records for UN General Assembly resolutions.
+  kind: primary
+  arenas: [international]
+  access: scrape
+  status: planned
+  languages: [en]
+  terms:
+    notes: Site refuses automated fetches; check terms by hand.
+
+- id: un-transcripts
+  name: UN Transcripts (public preview)
+  publisher: United Nations
+  url: https://transcripts.un.org
+  description: >-
+    Machine-generated transcripts of UN meetings and press conferences, searchable by speaker and
+    linked to video. Not official records; used to find statements, which are then cited from the
+    official record.
+  kind: primary
+  arenas: [international]
+  access: scrape
+  status: planned
+  languages: [en]
+  terms:
+    notes: Links to the un.org copyright and terms pages, which refuse automated fetches; check by hand.
+
+- id: un-project
+  name: UN Project
+  publisher: UN Project
+  url: https://un-project.org
+  description: UN resolution votes in structured form.
+  kind: tracker
+  arenas: [international]
+  access: scrape
+  status: referenced
+  reason: Cross-check for UN votes; the UN Digital Library is the primary record.
+  languages: [en]
+
+- id: dig-watch
+  name: Digital Watch Observatory
+  publisher: Geneva Internet Platform and DiploFoundation
+  url: https://dig.watch
+  description: Session summaries of who said what at UN meetings and summits.
+  kind: tracker
+  arenas: [international]
+  access: scrape
+  status: planned
+  languages: [en]
+  terms:
+    licence: Creative Commons (version not stated), DiploFoundation
+    url: https://www.diplomacy.edu/terms/
+    notes: >-
+      DiploFoundation's terms cover all sites it operates, which likely includes dig.watch; dig.watch
+      itself refuses automated fetches, so confirm by hand. Attribution: author name and link.
+
+- id: oecd-ai
+  name: OECD.AI Policy Navigator
+  publisher: OECD
+  url: https://oecd.ai
+  description: National AI strategies and policies, including Germany's, and the OECD AI Review of Germany (2024).
+  kind: tracker
+  arenas: [international]
+  access: none
+  status: referenced
+  reason: Complementary resource on strategy and regulation; linked, not ingested.
+  languages: [en]
+
+- id: automated-decision-research
+  name: Automated Decision Research
+  publisher: Stop Killer Robots
+  url: https://automatedresearch.org
+  description: State positions on autonomous weapons.
+  kind: tracker
+  arenas: [international]
+  access: none
+  status: referenced
+  reason: Complementary resource on military AI positions; linked, not ingested.
+  languages: [en]
+
+# --- Other trackers and research ------------------------------------------------
+
+- id: lawai-gov-hub
+  name: LawAI Gov Hub
+  publisher: LawAI Gov Hub
+  url: https://lawaigovhub.com
+  description: Index of official AI governance documents, about 118 for Germany.
+  kind: tracker
+  arenas: [domestic, international]
+  access: none
+  status: referenced
+  reason: Complementary index of governance documents; linked, not ingested.
+  languages: [en]
+
+- id: i6eal
+  name: i6eal
+  publisher: i6eal
+  url: https://i6eal.de
+  description: German and EU monitors for AI enforcement, case law, supervision and standardisation.
+  kind: tracker
+  arenas: [domestic, eu]
+  access: none
+  status: referenced
+  reason: Complementary monitor of enforcement and standards; linked, not ingested.
+  languages: [de]
+
+- id: digital-policy-alert
+  name: Digital Policy Alert
+  publisher: Digital Policy Alert
+  url: https://digitalpolicyalert.org
+  description: Tracker of digital policy and regulatory developments by country.
+  kind: tracker
+  arenas: [domestic, eu, international]
+  access: none
+  status: referenced
+  reason: Complementary regulatory tracker; linked, not ingested.
+  languages: [en]
+
+- id: white-case-ai-watch
+  name: AI Watch
+  publisher: White & Case
+  url: https://www.whitecase.com/insight-our-thinking/ai-watch-global-regulatory-tracker
+  description: Law-firm tracker of AI regulation by jurisdiction.
+  kind: tracker
+  arenas: [domestic, eu, international]
+  access: none
+  status: referenced
+  reason: Complementary regulatory tracker; linked, not ingested.
+  languages: [en]
+
+- id: bird-bird
+  name: Bird & Bird AI regulation resources
+  publisher: Bird & Bird
+  url: https://www.twobirds.com
+  description: Law-firm analysis and tracking of AI regulation.
+  kind: tracker
+  arenas: [eu]
+  access: none
+  status: referenced
+  reason: Complementary regulatory analysis; linked, not ingested.
+  languages: [en]
+
+- id: lobbycontrol
+  name: LobbyControl
+  publisher: LobbyControl e.V.
+  url: https://www.lobbycontrol.de
+  description: Research on lobbying and lobby spending in Germany.
+  kind: research
+  arenas: [domestic]
+  access: none
+  status: referenced
+  reason: Research on lobbying; linked, not ingested.
+  languages: [de]
+
+- id: corporate-europe-observatory
+  name: Corporate Europe Observatory
+  publisher: Corporate Europe Observatory
+  url: https://corporateeurope.org
+  description: Research on corporate lobbying in the EU.
+  kind: research
+  arenas: [eu]
+  access: none
+  status: referenced
+  reason: Research on EU lobbying; linked, not ingested.
+  languages: [en]
+
+- id: swp
+  name: German Institute for International and Security Affairs (SWP)
+  name_original: Stiftung Wissenschaft und Politik
+  publisher: Stiftung Wissenschaft und Politik
+  url: https://www.swp-berlin.org
+  description: Analysis of autonomous weapons and international AI governance.
+  kind: research
+  arenas: [international]
+  access: none
+  status: referenced
+  reason: Policy research; linked, not ingested.
+  languages: [de, en]
+
+- id: interface
+  name: interface
+  publisher: interface (formerly Stiftung Neue Verantwortung)
+  url: https://www.interface-eu.org
+  description: Tech policy research on Germany and Europe.
+  kind: research
+  arenas: [domestic, eu]
+  access: none
+  status: referenced
+  reason: Policy research; linked, not ingested.
+  languages: [de, en]
+
+# --- Press ---------------------------------------------------------------------
+
+- id: tagesspiegel-background
+  name: Tagesspiegel Background Digitalisierung & KI
+  publisher: Tagesspiegel
+  url: https://background.tagesspiegel.de
+  description: Trade press on digital and AI policy, often the only source on Germany's stance in Council working groups.
+  kind: press
+  arenas: [domestic, eu]
+  access: none
+  status: referenced
+  reason: Paywalled; cited, not reproduced.
+  paywalled: true
+  languages: [de]
+
+- id: table-media
+  name: Table.Media
+  publisher: Table.Media
+  url: https://table.media
+  description: Trade press on policy, including digital and AI briefings.
+  kind: press
+  arenas: [domestic, eu]
+  access: none
+  status: referenced
+  reason: Paywalled; cited, not reproduced.
+  paywalled: true
+  languages: [de]

@@ -12,9 +12,9 @@ repos:
         entry: uv run ruff format
         language: system
         types_or: [python, pyi]
-      - id: pyright
-        name: pyright
-        entry: uv run pyright
+      - id: ty
+        name: ty
+        entry: uv run ty check
         language: system
         types_or: [python, pyi]
         pass_filenames: false

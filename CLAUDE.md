@@ -4,7 +4,7 @@ An open dataset of Germany's engagement on AI (parliament, government, EU, inter
 
 ## Before working
 
-- Vocabulary: [GLOSSARY.md](GLOSSARY.md). Use its terms in code, docs and data.
+- Vocabulary: [docs/GLOSSARY.md](docs/GLOSSARY.md). Use its terms in code, docs and data.
 - Decisions: [docs/adr/](docs/adr/). Read the relevant ADR before changing data layers, storage, publishability or the build.
 
 ## Data rules
