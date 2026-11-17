@@ -8,7 +8,9 @@ Durable facts about DIP's data and API that the code depends on. Authoritative d
 - `aktualisiert` changes when a linked entity changes, even if the record's own fields did not. It is excluded from content hashes.
 - Linked lists (`vorgangsbezug`, `vorgang_verlinkung`, …) are previews and may be incomplete. Query the linked endpoint for the full list.
 - Written and oral questions (`Schriftliche Frage`, `Mündliche Frage`) carry no `initiative` on the proceeding. The asking MP is on the activity (`aktivitaet.person_id`). Party breakdowns need activities.
+- Activity titles follow "Name, role, affiliation": for members of the Bundestag, `…, MdB, <parliamentary group>` (e.g. `Dr. Petra Sitte, MdB, DIE LINKE`); for answers, `…, Staatssekr., <ministry>`; for Bundesrat members, `…, MdBR (<office>), <Land>`. Group names vary by term (`DIE LINKE`, `Die Linke (Gruppe)`, `fraktionslos`); normalise before counting. `aktivitaetsart` distinguishes `Frage`, `Kleine Anfrage`, `Antwort`, `Rede`, `Zwischenfrage`, etc.
 - Timestamps are German local time (`+01:00` / `+02:00`); `f.aktualisiert.start` is sent in Europe/Berlin time.
+- Interpellations (`Kleine Anfrage`, `Große Anfrage`) have a step `vorgangsposition: "Antwort"` (rarely `"Ergänzende Antwort"`) whose `fundstelle` is the government's answer as a printed paper (`drucksachetyp: "Antwort"`, `urheber: ["Bundesregierung"]`). The lead ministry is on the step: `ressort[].titel` with `federfuehrend: true`. Full text: `drucksache-text/{fundstelle.id}`.
 - Plenary transcript text (`plenarprotokoll-text`) has one paragraph per line. Bundestag transcripts also link structured XML (`fundstelle.xml_url`) with speeches and speakers.
 
 ## Filters

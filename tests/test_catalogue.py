@@ -80,6 +80,7 @@ EVENT = {
     "title": "An example summit",
     "source_url": "https://example.org/summit",
     "source_name": "Example host government",
+    "ai_angle": "An official session on AI governance is on the programme.",
     "held": True,
 }
 
@@ -94,6 +95,7 @@ def test_curated_events_file_is_valid():
         {"source_url": "not a url"},
         {"date": "2026-02-10"},  # day date with month precision
         {"level": "domestic"},  # levels are local … international
+        {"ai_angle": None},  # every event must say where AI is on its agenda
     ],
 )
 def test_curated_event_rules(change):

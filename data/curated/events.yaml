@@ -1,4 +1,241 @@
 # Dated events that no feed provides, entered by hand. Every entry must cite an official
-# source (source_url). Schema: src/germany_on_ai/schema/event.py.
-# Check with `uv run germany-on-ai catalogue`.
-[]
+# source (source_url) and say where AI is on its agenda (ai_angle).
+# Schema: src/germany_on_ai/schema/event.py. Check with `uv run germany-on-ai catalogue`.
+
+# --- EU: Digital Omnibus on AI and the amended AI Act ----------------------------------
+# Source for this block: Council press release of 29 June 2026.
+
+- id: eu-digital-omnibus-ai-provisional-agreement
+  date: "2026-05"
+  precision: month
+  level: eu
+  kind: Council
+  title: Council and Parliament reach a provisional agreement on the Digital Omnibus on AI
+  source_url: https://www.consilium.europa.eu/en/press/press-releases/2026/05/07/artificial-intelligence-council-and-parliament-agree-to-simplify-and-streamline-rules
+  source_name: Council of the European Union
+  ai_angle: The regulation amends the AI Act.
+  held: true
+
+- id: eu-council-adopts-digital-omnibus-ai
+  date: "2026-06-29"
+  precision: day
+  level: eu
+  kind: Council
+  title: Council adopts the Digital Omnibus on AI, amending the AI Act
+  source_url: https://www.consilium.europa.eu/en/press/press-releases/2026/06/29/artificial-intelligence-council-gives-final-green-light-to-simplify-and-streamline-rules/
+  source_name: Council of the European Union
+  ai_angle: >-
+    The regulation delays the AI Act's high-risk rules and adds a ban on AI-generated
+    non-consensual intimate content and child sexual abuse material.
+  held: true
+
+- id: eu-ai-act-transparency-deadline
+  date: "2026-12-02"
+  precision: day
+  level: eu
+  kind: EU law
+  title: "AI Act as amended: deadline for transparency solutions for AI-generated content"
+  source_url: https://www.consilium.europa.eu/en/press/press-releases/2026/06/29/artificial-intelligence-council-gives-final-green-light-to-simplify-and-streamline-rules/
+  source_name: Council of the European Union
+  ai_angle: The Digital Omnibus on AI shortens the grace period for providers to 3 months.
+  held: false
+
+- id: eu-ai-act-intimate-content-ban
+  date: "2026-12"
+  precision: month
+  level: eu
+  kind: EU law
+  title: "AI Act as amended: ban on AI-generated non-consensual intimate content and child sexual abuse material applies"
+  source_url: https://www.consilium.europa.eu/en/press/press-releases/2026/06/29/artificial-intelligence-council-gives-final-green-light-to-simplify-and-streamline-rules/
+  source_name: Council of the European Union
+  ai_angle: A new prohibited AI practice added to the AI Act by the Digital Omnibus on AI.
+  held: false
+
+- id: eu-ai-act-sandboxes-deadline
+  date: "2027-08-02"
+  precision: day
+  level: eu
+  kind: EU law
+  title: "AI Act as amended: deadline for national AI regulatory sandboxes"
+  source_url: https://www.consilium.europa.eu/en/press/press-releases/2026/06/29/artificial-intelligence-council-gives-final-green-light-to-simplify-and-streamline-rules/
+  source_name: Council of the European Union
+  ai_angle: The Digital Omnibus on AI postpones the deadline for competent authorities to set up sandboxes.
+  held: false
+
+- id: eu-ai-act-high-risk-standalone
+  date: "2027-12-02"
+  precision: day
+  level: eu
+  kind: EU law
+  title: "AI Act as amended: rules for stand-alone high-risk AI systems apply"
+  source_url: https://www.consilium.europa.eu/en/press/press-releases/2026/06/29/artificial-intelligence-council-gives-final-green-light-to-simplify-and-streamline-rules/
+  source_name: Council of the European Union
+  ai_angle: Delayed from 2 August 2026 by the Digital Omnibus on AI.
+  held: false
+
+- id: eu-ai-act-high-risk-embedded
+  date: "2028-08-02"
+  precision: day
+  level: eu
+  kind: EU law
+  title: "AI Act as amended: rules for high-risk AI systems embedded in products apply"
+  source_url: https://www.consilium.europa.eu/en/press/press-releases/2026/06/29/artificial-intelligence-council-gives-final-green-light-to-simplify-and-streamline-rules/
+  source_name: Council of the European Union
+  ai_angle: New application date fixed by the Digital Omnibus on AI.
+  held: false
+
+# --- EU: broader Digital Omnibus -------------------------------------------------------
+
+- id: eu-council-mandate-digital-omnibus
+  date: "2026-10-21"
+  precision: day
+  level: eu
+  kind: Council
+  title: Council agrees its position on the Digital Omnibus (data protection, privacy and cyber reporting)
+  source_url: https://www.consilium.europa.eu/en/press/press-releases/2026/10/21/digital-rulebook-council-agrees-position-to-simplify-data-protection-privacy-and-cyber-reporting-rules/
+  source_name: Council of the European Union
+  ai_angle: >-
+    The mandate adds safeguards for processing sensitive data to develop and operate AI
+    systems and clarifies the lawful grounds for processing personal data for AI.
+  held: true
+
+# --- International and national calendar -------------------------------------------
+# Verified 17 Nov 2026 against each organiser's own page.
+
+- id: un-scientific-panel-ai-appointment-2026
+  date: '2026-02-12'
+  precision: day
+  level: international
+  kind: UN
+  title: UN General Assembly appoints the 40 members of the Independent International Scientific Panel
+    on AI
+  source_url: https://unric.org/en/general-assembly-appoints-artificial-intelligence-panel/
+  source_name: United Nations Regional Information Centre (UNRIC)
+  ai_angle: The General Assembly appointed 40 members to the Panel on AI for a term from 12 February 2026
+    to 11 February 2029.
+  held: true
+- id: un-scientific-panel-ai-first-report-2026
+  date: '2026-07-01'
+  precision: day
+  level: international
+  kind: UN
+  title: Independent International Scientific Panel on AI releases its first preliminary report
+  source_url: https://news.un.org/en/story/2026/09/1168353
+  source_name: UN News
+  ai_angle: The report is the Panel's first assessment of AI and was released ahead of the first Global
+    Dialogue on AI Governance.
+  held: true
+- id: un-global-dialogue-ai-geneva-2026
+  date: '2026-07-06'
+  precision: day
+  level: international
+  kind: UN
+  title: First UN Global Dialogue on AI Governance, Geneva
+  source_url: https://www.itu.int/en/mediacentre/Pages/PR-2026-07-06-Global-Dialogue.aspx
+  source_name: International Telecommunication Union (ITU)
+  ai_angle: The dialogue is mandated by UNGA resolution A/RES/79/325 on AI governance.
+  held: true
+  end: '2026-07-07'
+- id: ccw-gge-laws-2026-session-1
+  date: '2026-03-02'
+  precision: day
+  level: international
+  kind: Treaty talks
+  title: CCW Group of Governmental Experts on lethal autonomous weapons systems, first 2026 session
+  source_url: https://meetings.unoda.org/meeting/79329
+  source_name: UN Office for Disarmament Affairs (UNODA)
+  ai_angle: The group's mandate is lethal autonomous weapons systems, set by decision CCW/MSP/2025/8 of
+    the 2025 Meeting of High Contracting Parties.
+  held: true
+- id: ccw-gge-laws-2026-session-2
+  date: '2026-08-31'
+  precision: day
+  level: international
+  kind: Treaty talks
+  title: CCW Group of Governmental Experts on lethal autonomous weapons systems, second 2026 session (31
+    August-4 September)
+  source_url: https://meetings.unoda.org/meeting/79329
+  source_name: UN Office for Disarmament Affairs (UNODA)
+  ai_angle: The group's mandate is lethal autonomous weapons systems, set by decision CCW/MSP/2025/8 of
+    the 2025 Meeting of High Contracting Parties.
+  held: true
+- id: ccw-seventh-review-conference-2026
+  date: '2026-11-16'
+  precision: day
+  level: international
+  kind: Conference
+  title: Seventh Review Conference of the Convention on Certain Conventional Weapons, Geneva
+  source_url: https://www.ungeneva.org/en/news-media/press-release/2026/11/seventh-review-conference-high-contracting-parties-convention
+  source_name: United Nations Geneva
+  ai_angle: The conference will consider the outcome of the Group of Governmental Experts on lethal autonomous
+    weapons systems and decide on future work on the issue.
+  held: false
+  end: '2026-11-20'
+- id: india-ai-impact-summit-2026
+  date: '2026-02-16'
+  precision: day
+  level: international
+  kind: Summit
+  title: India-AI Impact Summit 2026, New Delhi
+  source_url: https://static.pib.gov.in/WriteReadData/specificdocs/documents/2026/jan/doc2026121763801.pdf
+  source_name: Press Information Bureau, Government of India
+  ai_angle: The summit is a global AI summit, the first hosted in the Global South, structured around
+    seven themes including Safe and Trusted AI.
+  held: true
+  end: '2026-02-20'
+- id: geneva-ai-summit-2027
+  date: '2027-06-21'
+  precision: day
+  level: international
+  kind: Summit
+  title: Geneva AI Summit 2027
+  source_url: https://www.bakom.admin.ch/en/geneva-ai-summit-2027-international-summit-on-artificial-intelligence-in-geneva
+  source_name: Swiss Federal Office of Communications (OFCOM)
+  ai_angle: The Swiss government describes it as the fifth international summit dedicated to AI governance.
+  held: false
+  end: '2027-06-22'
+- id: g7-digital-tech-ministerial-paris-2026
+  date: '2026-05-29'
+  precision: day
+  level: international
+  kind: G7
+  title: G7 Digital and Technology Ministerial Meeting, Paris
+  source_url: https://www.gov.uk/government/publications/g7-digital-and-technology-ministerial-declaration-29-may-2026
+  source_name: UK Government
+  ai_angle: The ministerial declaration adopted at the meeting includes commitments on AI safety and AI
+    adoption.
+  held: true
+- id: g7-leaders-summit-evian-2026
+  date: '2026-06-15'
+  precision: day
+  level: international
+  kind: G7
+  title: G7 Leaders' Summit, Evian
+  source_url: https://www.elysee.fr/en/G7evian/2026/06/01/g7-program
+  source_name: Élysée (French Presidency)
+  ai_angle: The official programme includes a working lunch on 17 June titled "Ensuring a safe, fast and
+    efficient deployment of artificial intelligence".
+  held: true
+  end: '2026-06-17'
+- id: oecd-mcm-2026-ai-side-event
+  date: '2026-06-02'
+  precision: day
+  level: international
+  kind: OECD
+  title: OECD side event on international AI co-operation at the 2026 Ministerial Council Meeting (online)
+  source_url: https://oecd.ai/en/mcm-2026
+  source_name: OECD.AI
+  ai_angle: The side event presented the OECD AI Policy Toolkit and the Hiroshima AI Process Reporting
+    Framework.
+  held: true
+- id: digital-gipfel-2026
+  date: '2026-11-02'
+  precision: day
+  level: national
+  kind: Conference
+  title: Digital-Gipfel 2026 of the German federal government, Berlin
+  source_url: https://www.bundesregierung.de/breg-de/aktuelles/digital-gipfel-2026-2457634
+  source_name: Bundesregierung (Federal Government of Germany)
+  ai_angle: 'The summit''s motto is "Shaping AI: safe, sovereign, competitive" and its focus topic is
+    artificial intelligence.'
+  held: true

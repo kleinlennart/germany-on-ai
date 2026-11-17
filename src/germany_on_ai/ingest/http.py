@@ -65,27 +65,44 @@ class CachedClient:
         )
 
     def get(self, endpoint: str, params: Params | None = None) -> Any:
+        """A JSON response, parsed."""
+        text = self._cached(endpoint, params, ".json", lambda r: json.dumps(r.json()))
+        return json.loads(text)
+
+    def get_text(self, endpoint: str, params: Params | None = None) -> str:
+        """A text response (RSS, iCal), as received."""
+        return self._cached(endpoint, params, ".txt", lambda r: r.text)
+
+    def _cached(
+        self,
+        endpoint: str,
+        params: Params | None,
+        suffix: str,
+        body: Callable[[httpx.Response], str],
+    ) -> str:
         params = sorted(params or [])
-        path = self._cache_path(endpoint, params)
+        path = self._cache_path(endpoint, params).with_suffix(suffix)
         if self.offline:
             if not path.exists():
                 raise FetchError(f"not cached: {endpoint} {params}")
-            return json.loads(path.read_text(encoding="utf-8"))
+            return path.read_text(encoding="utf-8")
         if self.reuse_age and path.exists():
             age = self.clock() - path.stat().st_mtime
             if age < self.reuse_age.total_seconds():
-                return json.loads(path.read_text(encoding="utf-8"))
-        data = self._fetch(endpoint, params)
+                return path.read_text(encoding="utf-8")
+        text = self._fetch(endpoint, params, body)
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        tmp.write_text(text, encoding="utf-8")
         tmp.replace(path)
-        return data
+        return text
 
     def check(self, response: httpx.Response) -> None:
         """Source-specific signs of throttling; override where a source has them."""
 
-    def _fetch(self, endpoint: str, params: Params) -> Any:
+    def _fetch(
+        self, endpoint: str, params: Params, body: Callable[[httpx.Response], str]
+    ) -> str:
         url = f"/{endpoint}" if endpoint else ""
         for attempt in range(1, self.max_attempts + 1):
             wait = self._last_request + self.min_interval - self.clock()
@@ -102,7 +119,7 @@ class CachedClient:
                         f"{endpoint}: unexpected HTTP {response.status_code}"
                     )
                 # A cut-off body fails to parse; retry it like a transient error.
-                return response.json()
+                return body(response)
             except (httpx.TransportError, json.JSONDecodeError, Retryable) as error:
                 if attempt == self.max_attempts:
                     raise FetchError(

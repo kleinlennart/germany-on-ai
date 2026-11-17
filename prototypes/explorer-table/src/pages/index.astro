@@ -40,7 +40,7 @@ const next = timeline.upcoming[0];
       <a href="#initiators"><strong>opposition groups</strong></a> initiate most of those that name an initiator.
       {next && (
         <>
-          {" "}Next on the calendar: <a href="#coming-up"><strong>{next.title}</strong></a> ({next.when}).
+          {" "}{next.start <= today ? "Under way now" : "Next on the calendar"}: <a href="#coming-up"><strong>{next.title}</strong></a> ({next.when}).
         </>
       )}
     </p>

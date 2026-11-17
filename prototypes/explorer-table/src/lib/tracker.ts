@@ -2,7 +2,9 @@
 // comes from here, computed at build time from the stored records.
 import catalogue from "../data/catalogue.json";
 import { type Level, type Seed, seeds } from "../data/seeds";
+import curatedEvents from "../data/curated-events.json";
 import euEvents from "../data/eu-events.json";
+import germanyCalendar from "../data/germany-calendar.json";
 import data from "../data/vorgaenge.json";
 import { formatDate, type Proceeding, recordHref } from "./proceedings";
 
@@ -208,6 +210,51 @@ const otherItems: TimelineItem[] = [
     }),
   ),
 ];
+const sourcedItem = (level: Level) => (e: { date: string; kind: string; title: string; url: string }): TimelineItem => ({
+  sortKey: e.date,
+  when: formatDate(e.date),
+  level,
+  kind: e.kind,
+  title: e.title,
+  href: e.url,
+  external: true,
+  fromBrief: false,
+  start: e.date,
+  end: e.date,
+});
+otherItems.push(...germanyCalendar.events.map(sourcedItem("Germany")));
+
+// Curated events: each verified against an official source; coarse dates become periods.
+const CURATED_LEVEL: Record<string, Level> = {
+  international: "International",
+  eu: "European Union",
+  national: "Germany",
+};
+type Curated = {
+  date: string; precision: Seed["precision"]; end: string | null; level: string; kind: string;
+  title: string; source_url: string; held: boolean;
+};
+otherItems.push(
+  ...(curatedEvents as Curated[]).map((c): TimelineItem => {
+    const asSeed: Seed = { date: c.date, precision: c.precision, level: CURATED_LEVEL[c.level], kind: c.kind, title: c.title, held: c.held };
+    const [start, end] = period(asSeed);
+    return {
+      sortKey: start,
+      when: c.end ? `${formatDate(c.date)} to ${formatDate(c.end)}` : seedItem(asSeed).when,
+      level: CURATED_LEVEL[c.level],
+      kind: c.kind,
+      title: c.title,
+      href: c.source_url,
+      external: true,
+      fromBrief: false,
+      held: c.held,
+      start,
+      end: c.end ?? end,
+    };
+  }),
+);
+/** Bundestag sitting weeks: context bands on the Germany lane, not events. */
+export const sittingWeeks = germanyCalendar.sittingWeeks;
 const dated = [...parliamentItems(current), ...otherItems];
 /** Everything with a date, across all terms: the timeline line can zoom out to 2017. */
 export const lineItems = [...parliamentItems(ai), ...otherItems].sort((a, b) => a.start.localeCompare(b.start));

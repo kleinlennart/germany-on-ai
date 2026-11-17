@@ -8,7 +8,7 @@
 // marker's dates: markers that would overlap move to a row just above or below
 // (dodging), so every event stays visible at its exact date. Without JavaScript the
 // server-rendered default range shows, without dodging.
-import { DEFAULT_RANGE, eventId, RANGES, type TimelineItem } from "../lib/tracker";
+import { DEFAULT_RANGE, eventId, RANGES, sittingWeeks, type TimelineItem } from "../lib/tracker";
 
 type Props = { items: TimelineItem[]; today: string };
 const { items, today } = Astro.props as Props;
@@ -31,10 +31,13 @@ for (let d = new Date(initial.from.slice(0, 7) + "-01"); d <= new Date(initial.t
   serverTicks.push({ iso: d.toISOString().slice(0, 10), label });
 }
 ---
-<div class="ranges" role="group" aria-label="Time range" hidden>
-  {RANGES.map((r) => (
-    <button type="button" data-range={r.key} data-from={r.from} data-to={r.to} aria-pressed={r.key === DEFAULT_RANGE ? "true" : "false"}>{r.label}</button>
-  ))}
+<div class="controls">
+  <div class="ranges" role="group" aria-label="Time range" hidden>
+    {RANGES.map((r) => (
+      <button type="button" data-range={r.key} data-from={r.from} data-to={r.to} aria-pressed={r.key === DEFAULT_RANGE ? "true" : "false"}>{r.label}</button>
+    ))}
+  </div>
+  <p class="key"><span class="key-band" aria-hidden="true"></span>Bundestag sitting weeks</p>
 </div>
 
 <div class="scroller">
@@ -43,6 +46,12 @@ for (let d = new Date(initial.from.slice(0, 7) + "-01"); d <= new Date(initial.t
       <div class:list={["lane", laneClass(lane)]}>
         <span class="lane-name"><span class="swatch" aria-hidden="true"></span>{lane}</span>
         <div class="track">
+          {lane === "Germany" && sittingWeeks.map((w) => {
+            const x = clamp(pct(w.start));
+            const w2 = Math.max(clamp(pct(w.end)) - x, 0.3);
+            const off = Date.parse(w.end) < t0 || Date.parse(w.start) > t1;
+            return <span class:list={["band", off && "off"]} data-start={w.start} data-end={w.end} style={`left:${x}%;width:${w2}%`} aria-hidden="true"></span>;
+          })}
           <span class="rail past" style={`width:${todayX}%`}></span>
           <span class="rail future" style={`left:${todayX}%`}></span>
           {items.filter((i) => i.level === lane).map((i) => {
@@ -68,7 +77,7 @@ for (let d = new Date(initial.from.slice(0, 7) + "-01"); d <= new Date(initial.t
                   data-external={i.external ? "1" : ""}
                   data-brief={i.fromBrief ? "1" : ""}
                 ></a>
-                {label && <span class:list={["label", !visible(i) && "off"]} data-for={id} style={`left:${x + w / 2}%`}>{label}</span>}
+                {label && <span class:list={["label", !visible(i) && "off"]} data-for={id} style={`left:${x}%`}>{label}</span>}
               </>
             );
           })}
@@ -128,8 +137,10 @@ for (let d = new Date(initial.from.slice(0, 7) + "-01"); d <= new Date(initial.t
 
   // --- Layout ------------------------------------------------------------------
   const ROW_STEP = 13; // px between dodge rows; three rows fit a lane
-  const ROWS = [0, -1, 1];
+  // Below first: labels of upcoming periods sit above the line.
+  const ROWS = [0, 1, -1];
   const GAP = 3;
+  const PILL = 16; // px
 
   function axisTicks(t0: number, t1: number) {
     const months = (t1 - t0) / (30.44 * 864e5);
@@ -162,6 +173,15 @@ for (let d = new Date(initial.from.slice(0, 7) + "-01"); d <= new Date(initial.t
     line.querySelectorAll<HTMLElement>(".rail.past").forEach((r) => (r.style.width = `${todayX}px`));
     line.querySelectorAll<HTMLElement>(".rail.future").forEach((r) => (r.style.left = `${todayX}px`));
     line.querySelector<HTMLElement>(".today")!.style.left = `${todayX}px`;
+    for (const band of line.querySelectorAll<HTMLElement>(".band")) {
+      // Sitting weeks end on Friday; draw through the end of that day.
+      const a = x(band.dataset.start!), b = x(band.dataset.end!) + W / ((t1 - t0) / 864e5);
+      const off = b < 0 || a > W;
+      band.classList.toggle("off", off);
+      if (off) continue;
+      band.style.left = `${clampX(a)}px`;
+      band.style.width = `${Math.max(clampX(b) - clampX(a), 1)}px`;
+    }
 
     for (const lane of line.querySelectorAll<HTMLElement>(".lane")) {
       const laneMarks = [...lane.querySelectorAll<HTMLAnchorElement>(".mark")].sort(byStart);
@@ -175,7 +195,10 @@ for (let d = new Date(initial.from.slice(0, 7) + "-01"); d <= new Date(initial.t
         if (off) continue;
         const point = m.classList.contains("point");
         const left = point ? a : clampX(a);
-        const width = point ? 0 : Math.max(clampX(b) - left, 6);
+        // A period shorter than a dot is drawn as a pill at least a dot wide, so it never
+        // looks smaller than a single day.
+        const width = point ? 0 : Math.max(clampX(b) - left, PILL);
+        m.classList.toggle("short", !point && clampX(b) - left < PILL);
         const x1 = point ? left - 7 : left, x2 = point ? left + 7 : left + width;
         // First row where this marker clears the previous one; if none, the least crowded.
         const rowChoice =
@@ -186,7 +209,7 @@ for (let d = new Date(initial.from.slice(0, 7) + "-01"); d <= new Date(initial.t
         if (!point) m.style.width = `${width}px`;
         m.style.setProperty("--dy", `${rowChoice * ROW_STEP}px`);
         if (label) {
-          label.style.left = `${left + width / 2}px`;
+          label.style.left = `${left}px`;
           label.style.setProperty("--dy", `${rowChoice * ROW_STEP}px`);
         }
       }
@@ -299,7 +322,12 @@ for (let d = new Date(initial.from.slice(0, 7) + "-01"); d <= new Date(initial.t
 </script>
 
 <style>
-  .ranges { display: flex; gap: 6px; margin: 0 0 10px 8.5rem; }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin: 0 0 10px 8.5rem; }
+  .ranges { display: flex; gap: 6px; }
+  .key { margin: 0; font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; }
+  .key-band { width: 18px; height: 12px; background: var(--band); border-radius: 2px; }
+  /* Sitting weeks: context behind the Germany lane, quieter than any event. */
+  .band { position: absolute; top: 5px; bottom: 5px; background: var(--band); border-radius: 2px; }
   .ranges[hidden] { display: none; }
   .ranges button {
     font-size: 13px; padding: 4px 11px; border-radius: 999px; cursor: pointer;
@@ -331,18 +359,20 @@ for (let d = new Date(initial.from.slice(0, 7) + "-01"); d <= new Date(initial.t
   .off { display: none !important; }
   .point { width: 11px; height: 11px; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 2px var(--bg, #fff); }
   .point.brief { background: var(--bg, #fff); border: 2px solid var(--lane); box-sizing: border-box; }
-  .span { height: 7px; border-radius: 4px; transform: translateY(-50%); opacity: 0.9; }
-  .span.brief { background: color-mix(in srgb, var(--lane) 22%, white); border: 1.5px solid var(--lane); box-sizing: border-box; height: 9px; }
+  .span { height: 9px; border-radius: 5px; transform: translateY(-50%); opacity: 0.9; }
+  .span.short { height: 11px; border-radius: 6px; opacity: 1; }
+  .span.brief { background: color-mix(in srgb, var(--lane) 22%, white); border: 1.5px solid var(--lane); box-sizing: border-box; height: 11px; }
   .mark { cursor: pointer; transition: transform 0.12s ease-out, filter 0.12s, background-color 0.12s; }
   /* Dots grow a little on hover; bars keep their shape and only darken. */
   .point:hover { transform: translate(-50%, -50%) scale(1.25); }
   .span:hover { filter: brightness(0.85); }
   /* Selection in the event's own colour: a thin ring on dots, a solid fill on bars. */
   .point.selected { z-index: 2; box-shadow: 0 0 0 2px var(--bg, #fff), 0 0 0 3.5px var(--lane); }
-  .span.selected { z-index: 2; background: var(--lane); }
+  .span.selected { z-index: 2; background: var(--lane); box-shadow: 0 0 0 2px var(--bg, #fff), 0 0 0 3.5px var(--lane); }
   .mark:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
   @media (prefers-reduced-motion: reduce) { .mark { transition: none; } }
-  .label { position: absolute; bottom: calc(50% + 9px - var(--dy, 0px)); transform: translateX(-50%); font-size: 12.5px; color: var(--ink); white-space: nowrap; }
+  /* Period labels start at their bar's left edge, like a caption. */
+  .label { position: absolute; bottom: calc(50% + 9px - var(--dy, 0px)); font-size: 12.5px; color: var(--ink); white-space: nowrap; }
 
   .axis { height: 30px; }
   .axis .track { border-top: 1px solid var(--rule); }
@@ -384,6 +414,7 @@ for (let d = new Date(initial.from.slice(0, 7) + "-01"); d <= new Date(initial.t
   [hidden] { display: none !important; }
   @media (max-width: 680px) {
     .detail-row { grid-template-columns: 1fr; } .detail-row > span:first-child { display: none; }
-    .ranges { margin-left: 0; }
+    .controls { margin-left: 0; }
   }
+  .controls, .line { --band: #eceef1; }
 </style>

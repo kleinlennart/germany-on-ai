@@ -15,5 +15,7 @@ procedures:
 acts:
   - celex: 32024R1689
     short: AI Act
+    # Its application dates after the amendment took effect come from the curated events.
+    amended_by: 32026R1744
   - celex: 32026R1744
     short: Digital Omnibus on AI

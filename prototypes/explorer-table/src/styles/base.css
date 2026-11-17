@@ -44,13 +44,13 @@ h2 { font-size: 26px; line-height: 1.2; margin: 14px 0 12px; max-width: 60rem; }
 @media (min-width: 700px) { h2 .ph { white-space: nowrap; } }
 .intro { padding: 44px 0 20px; }
 .asof { margin: 0 0 22px; font-size: 14px; color: var(--muted); }
-.lede { font-size: 21px; line-height: 1.55; margin: 0; color: var(--ink-soft); max-width: 44rem; font-weight: 400; }
+.lede { font-size: 21px; line-height: 1.55; margin: 0; color: var(--ink-soft); max-width: 46rem; font-weight: 400; }
 .lede strong { font-weight: 600; color: var(--ink); }
-.prose { font-size: 17px; line-height: 1.65; max-width: 40rem; color: var(--ink-soft); }
+.prose { font-size: 17px; line-height: 1.65; max-width: 52rem; color: var(--ink-soft); }
 .prose p, .prose ul { margin: 0 0 14px; }
-.note { color: var(--muted); font-size: 15px; margin: 0 0 22px; max-width: 42rem; }
+.note { color: var(--muted); font-size: 15px; margin: 0 0 22px; max-width: 52rem; }
 h2 + :not(.note) { margin-top: 18px; }
-.source { color: var(--muted); font-size: 13px; margin: 12px 0 0; max-width: 42rem; line-height: 1.5; }
+.source { color: var(--muted); font-size: 13px; margin: 12px 0 0; max-width: 52rem; line-height: 1.5; }
 
 /* Each section opens with a solid rule: sections read as distinct blocks. */
 main > section { padding: 0 0 36px; }

@@ -30,12 +30,16 @@ class Precision(StrEnum):
 class CuratedEvent(Model):
     id: Slug
     date: PartialDate
+    # Last day of a multi-day event (day precision only).
+    end: Annotated[str, StringConstraints(pattern=r"^\d{4}-\d{2}-\d{2}$")] | None = None
     precision: Precision
     level: Level
     kind: str
     title: str
     source_url: Url
     source_name: str
+    # Where AI is on the event's official agenda (session, declaration, workstream).
+    ai_angle: str
     held: bool  # coarse dates cannot tell past from future, so each event says
 
     @model_validator(mode="after")
@@ -46,4 +50,6 @@ class CuratedEvent(Model):
             raise ValueError(
                 f"date {self.date!r} does not match precision {self.precision!r}"
             )
+        if self.end and (self.precision != Precision.DAY or self.end < self.date):
+            raise ValueError("end needs day precision and must not be before date")
         return self

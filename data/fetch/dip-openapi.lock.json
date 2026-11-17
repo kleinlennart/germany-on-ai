@@ -33,6 +33,7 @@
       "f.wahlperiode",
       "f.zuordnung"
     ],
-    "/plenarprotokoll-text/{id}": []
+    "/plenarprotokoll-text/{id}": [],
+    "/drucksache-text/{id}": []
   }
 }

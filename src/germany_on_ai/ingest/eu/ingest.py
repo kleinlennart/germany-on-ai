@@ -38,6 +38,7 @@ class Act(BaseModel):
     model_config = ConfigDict(extra="forbid")
     celex: str
     short: str
+    amended_by: str | None = None  # CELEX of a later act that changes its dates
 
 
 class FetchFilter(BaseModel):

@@ -38,3 +38,26 @@ def test_documented_parameters_resolves_refs():
         },
     }
     assert documented_parameters(spec) == {"/vorgang": {"f.titel", "cursor"}}
+
+
+def test_answer_ids_pick_current_term_interpellation_answers():
+    from germany_on_ai.ingest.dip.ingest import answer_ids
+
+    def step(vorgang, position, typ="Kleine Anfrage", doc="Drucksache", id_="1"):
+        return {
+            "vorgang_id": vorgang,
+            "vorgangsposition": position,
+            "vorgangstyp": typ,
+            "fundstelle": {"dokumentart": doc, "id": id_},
+        }
+
+    positions = [
+        step("a", "Antwort", id_="20"),
+        step("a", "Kleine Anfrage", id_="10"),  # the questions, not the answer
+        step("b", "Antwort", id_="30"),  # earlier term
+        step("c", "Antwort", typ="Antrag", id_="40"),  # not an interpellation
+        step("d", "Ergänzende Antwort", typ="Große Anfrage", id_="5"),
+        step("d", "Ergänzende Antwort", typ="Große Anfrage", id_="5"),  # duplicate
+    ]
+    wp_of = {"a": 21, "b": 20, "c": 21, "d": 21}
+    assert answer_ids(positions, wp_of, [21]) == ["5", "20"]

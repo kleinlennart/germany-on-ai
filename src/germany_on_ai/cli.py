@@ -7,6 +7,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from germany_on_ai import build, catalogue, store
+from germany_on_ai.ingest import feeds
 from germany_on_ai.ingest.dip import ingest as dip
 from germany_on_ai.ingest.dip import spec as dip_spec
 from germany_on_ai.ingest.dip import transcripts
@@ -66,6 +67,19 @@ def _ingest_eu(args: argparse.Namespace) -> int:
     for entity, s in stats.items():
         print(
             f"{entity}: {s.added} added, {s.changed} changed, {s.unchanged} unchanged"
+        )
+    return 0
+
+
+def _ingest_feeds(args: argparse.Namespace) -> int:
+    try:
+        stats = feeds.run(offline=args.offline)
+    except FetchError as error:
+        print(f"Feed ingest failed: {error}", file=sys.stderr)
+        return 1
+    for source, s in stats.items():
+        print(
+            f"{source}: {s.added} added, {s.changed} changed, {s.unchanged} unchanged"
         )
     return 0
 
@@ -138,6 +152,13 @@ def main(argv: list[str] | None = None) -> int:
         "--offline", action="store_true", help="read cached responses only"
     )
     eu_parser.set_defaults(run=_ingest_eu)
+    feeds_parser = sources.add_parser(
+        "feeds", help="government press, Bundesrat events, Bundestag sitting weeks"
+    )
+    feeds_parser.add_argument(
+        "--offline", action="store_true", help="read cached responses only"
+    )
+    feeds_parser.set_defaults(run=_ingest_feeds)
 
     spec = commands.add_parser(
         "check-dip-spec", help="compare DIP's live API spec with the lock"

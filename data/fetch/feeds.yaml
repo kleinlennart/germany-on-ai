@@ -1,0 +1,27 @@
+# Feeds polled for the timeline. Feeds keep no history, so each run adds new items and
+# keeps what was stored before. Bump `version` when anything here changes.
+version: 1
+
+feeds:
+  # Federal government (Press and Information Office): press releases, including the
+  # Chancellor's weekly appointments, and the Bulletin with speeches.
+  - source: bundesregierung-feeds
+    entity: item
+    format: rss
+    urls:
+      - https://www.bundesregierung.de/service/rss/breg-de/1151244/feed.xml
+      - https://www.bundesregierung.de/service/rss/breg-de/2318648/feed.xml
+  # Bundesrat: upcoming plenary sessions and events (date and time are in the title).
+  - source: bundesrat-events
+    entity: event
+    format: rss
+    urls:
+      - https://www.bundesrat.de/SiteGlobals/Functions/RSSFeed/RSSGenerator_Event.xml
+  # Bundestag sitting weeks, 2026 and 2027 (the second file's name says 2026 but it holds 2027).
+  - source: bundestag-sitting-weeks
+    entity: sitting-week
+    format: ical
+    page: https://www.bundestag.de/parlament/plenum/sitzungskalender
+    urls:
+      - https://www.bundestag.de/resource/blob/1103938/Parlamentstermine_2026_ics.ics
+      - https://www.bundestag.de/resource/blob/1193892/Parlamentstermine_2026_ics-1-.ics

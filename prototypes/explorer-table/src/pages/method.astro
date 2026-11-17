@@ -20,68 +20,70 @@ const statusOf = (s: Source) => (s.id === "dip" ? "In use" : s.status === "plann
 const rank = (s: Source) => ["In use", "Planned"].indexOf(statusOf(s));
 const used = sources.filter((s) => s.status !== "referenced").sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
 const pointedTo = sources.filter((s) => s.status === "referenced").sort((a, b) => a.name.localeCompare(b.name));
-const terms = (s: Source) => (s.terms.verified ? s.terms.licence ?? "Checked" : "Being checked");
+// Short labels for confirmed terms; the full wording is on the linked terms page.
+const SHORT_TERMS: [RegExp, string][] = [
+  [/CC0 .*user contributions/i, "Partly CC0"],
+  [/CC0/, "CC0"],
+  [/CC BY 4\.0/, "CC BY 4.0"],
+  [/ODbL/, "ODbL"],
+  [/private use/i, "Private use only"],
+  [/all rights reserved/i, "All rights reserved"],
+  [/reuse authorised|acknowledg/i, "Reuse with credit"],
+];
+const terms = (s: Source) =>
+  s.terms.verified && s.terms.licence
+    ? (SHORT_TERMS.find(([re]) => re.test(s.terms.licence!))?.[1] ?? s.terms.licence)
+    : s.terms.url
+      ? "Terms page"
+      : "";
 ---
 <Site title="Method and sources | Germany on AI" description="How the situation report on German AI policy is made: what counts as AI, where the data comes from, and its limits.">
   <section class="intro">
     <h1>Method and sources</h1>
-    <p class="lede">
-      Every figure in the situation report is counted from public records by a rule stated on this page,
-      and every item links to its source. Rebuilding the report from the same records gives the same numbers.
-    </p>
+    <p class="lede">Figures are counted from public records by the rules below. Every item links to its source.</p>
   </section>
 
   <section id="what-counts">
     <h2><a class="self" href="#what-counts">What counts as AI</a></h2>
-    <div class="prose">
-      <p>A parliamentary proceeding counts as AI-related if {RULE}.</p>
-      <p>
-        The Bundestag's documentalists index every proceeding with keywords from a controlled thesaurus.
-        The title rule catches recent items they have not indexed yet. Some proceedings meet the rule while
-        touching AI only in part, such as a broad digital-policy bill. A documented labelling step will
-        replace this rule later.
-      </p>
-    </div>
+    <p class="prose">A parliamentary proceeding counts if {RULE}. Some of these touch AI only in part.</p>
   </section>
 
   <section id="coverage">
-    <h2><a class="self" href="#coverage">Period covered</a></h2>
-    <div class="prose">
-      <p>
-        Every electoral term from the {ordinal(TERMS[0].term)} Bundestag, which convened on {formatDate(TERMS[0].start)}. That term
-        saw the federal AI strategy (November 2018) and the Bundestag's Enquete Commission on Artificial
-        Intelligence. Whole terms are used because parliament organises its records by term. The report
-        focuses on the current term; earlier terms are shown as context. {totals.all.toLocaleString("en")} AI proceedings in all,
-        up to {formatDate(asOf)}.
-      </p>
-    </div>
+    <h2><a class="self" href="#coverage">Period</a></h2>
+    <p class="prose">
+      From the {ordinal(TERMS[0].term)} Bundestag ({formatDate(TERMS[0].start)}), the term of the federal AI strategy. The current
+      term is the focus; earlier terms are context. {totals.all.toLocaleString("en")} AI proceedings up to {formatDate(asOf)}.
+    </p>
+  </section>
+
+  <section id="timeline-sources">
+    <h2><a class="self" href="#timeline-sources">Timeline sources</a></h2>
+    <dl class="levels">
+      <dt>International</dt>
+      <dd>Entered by hand, each checked against the organiser's page; only events with AI on the official agenda.</dd>
+      <dt>European Union</dt>
+      <dd>European Parliament open data and the EU Publications Office. Amended dates replace the original ones.</dd>
+      <dt>Germany</dt>
+      <dd>Bundestag and Bundesrat records and calendars; government press items that meet the AI rule.</dd>
+    </dl>
+    <p class="note">Items marked "Source not yet linked" are not yet verified.</p>
   </section>
 
   <section id="dates">
-    <h2><a class="self" href="#dates">Dates and the timeline</a></h2>
-    <div class="prose">
-      <p>
-        Parliament's documentation system dates a proceeding by its most recent document, not by when it
-        began. Counts per quarter and timeline entries use that date, so a proceeding that started earlier
-        appears when it last moved.
-      </p>
-      <p>
-        On the timeline, an event known only to a month, a season or a year is a bar over that period.
-        Government, EU and international events come from research notes for now and are marked "Source not
-        yet linked" until their own sources are added.
-      </p>
-    </div>
+    <h2><a class="self" href="#dates">Dates</a></h2>
+    <p class="prose">
+      Parliamentary items carry the date of their latest document. Bars mark periods: events lasting several
+      days, and dates known only to the month, season or year.
+    </p>
   </section>
 
   <section id="limits">
-    <h2><a class="self" href="#limits">Known limits</a></h2>
-    <div class="prose">
-      <ul>
-        <li>Written and oral questions are filed by individual members; until speeches and questions are loaded, they are not attributed to a parliamentary group.</li>
-        <li>Live data so far covers parliament only. Government, EU and international sources are being added.</li>
-        <li>A bill and a written question each count once, so the counts measure activity.</li>
-      </ul>
-    </div>
+    <h2><a class="self" href="#limits">Limits</a></h2>
+    <ul class="prose">
+      <li>Questions by individual members are not yet attributed to a party.</li>
+      <li>How member states vote in the Council is not yet covered.</li>
+      <li>A bill and a written question count the same: the figures measure activity.</li>
+    </ul>
   </section>
 
   <section id="catalogue">
@@ -97,7 +99,7 @@ const terms = (s: Source) => (s.terms.verified ? s.terms.licence ?? "Checked" : 
             <td><a href={s.url} target="_blank" rel="external noopener">{s.name}</a><span class="pub">{s.publisher}</span></td>
             <td>{levels(s)}</td>
             <td>{statusOf(s)}</td>
-            <td>{s.terms.url ? <a href={s.terms.url} target="_blank" rel="external noopener">{terms(s)}</a> : terms(s)}</td>
+            <td class="terms">{s.terms.url ? <a href={s.terms.url} target="_blank" rel="external noopener">{terms(s)}</a> : terms(s)}</td>
           </tr>
         ))}
       </tbody>
@@ -122,10 +124,18 @@ const terms = (s: Source) => (s.terms.verified ? s.terms.licence ?? "Checked" : 
 
 <style>
   h3 { font-size: 16px; margin: 26px 0 8px; }
+  .levels { display: grid; grid-template-columns: 9rem 1fr; gap: 6px 18px; max-width: 46rem; margin: 0 0 10px; }
+  .levels dt { font-weight: 600; }
+  .levels dd { margin: 0; color: var(--ink-soft); }
+  @media (max-width: 640px) { .levels { grid-template-columns: 1fr; } }
   .catalogue { width: 100%; max-width: 60rem; border-collapse: collapse; font-size: 14px; }
   .catalogue th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12.5px; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--rule-strong); }
   .catalogue td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
-  .catalogue td:first-child { width: 38%; }
+  .catalogue { table-layout: auto; }
+  .catalogue td:first-child { width: auto; }
+  .catalogue th:nth-child(2), .catalogue td:nth-child(2) { width: 9rem; }
+  .catalogue th:nth-child(3), .catalogue td:nth-child(3) { width: 6rem; }
+  .catalogue .terms { width: 10rem; font-size: 13px; }
   .catalogue td:first-child a { font-weight: 600; color: var(--ink); text-decoration-color: var(--ink-soft); }
   .pub { display: block; color: var(--muted); font-size: 13px; }
   @media (max-width: 640px) { .catalogue th:nth-child(2), .catalogue td:nth-child(2) { display: none; } }

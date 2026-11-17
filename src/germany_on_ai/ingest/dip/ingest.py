@@ -41,6 +41,7 @@ class FetchFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     version: int
     wahlperioden: list[int]
+    fulltext_wahlperioden: list[int]
     vorgang: VorgangFilter
     passages: PassageFilter
 
@@ -130,6 +131,27 @@ def fundstelle_ids(positions: Iterable[dict[str, Any]], dokumentart: str) -> set
     }
 
 
+INTERPELLATIONS = ("Kleine Anfrage", "Große Anfrage")
+ANSWERS = ("Antwort", "Ergänzende Antwort")
+
+
+def answer_ids(
+    positions: Iterable[dict[str, Any]], wp_of: dict[str, int], terms: list[int]
+) -> list[str]:
+    """Ids of the printed papers answering interpellations in these terms."""
+    return sorted(
+        {
+            str(p["fundstelle"]["id"])
+            for p in positions
+            if p.get("vorgangstyp") in INTERPELLATIONS
+            and p.get("vorgangsposition") in ANSWERS
+            and (p.get("fundstelle") or {}).get("dokumentart") == "Drucksache"
+            and wp_of.get(p["vorgang_id"]) in terms
+        },
+        key=int,
+    )
+
+
 def by_wahlperiode(record: SourceRecord) -> str:
     return f"wp{record.data['wahlperiode']}"
 
@@ -206,7 +228,7 @@ def run(client: DipClient, *, full: bool) -> dict[str, store.WriteStats]:
     )
 
     protokolle = transcripts.fetch_protokolle(
-        client, fetch_filter.wahlperioden, since_param(since)
+        client, fetch_filter.fulltext_wahlperioden, since_param(since)
     )
     stats["plenarprotokoll"] = store_records("plenarprotokoll", protokolle, started)
 
@@ -224,6 +246,13 @@ def run(client: DipClient, *, full: bool) -> dict[str, store.WriteStats]:
         # A transcript's passages are replaced as a set; offsets move with its text.
         replace=lambda r: r.data["plenarprotokoll_id"] in refreshed,
     )
+
+    # Government answers to this term's interpellations: full texts into the cache, for
+    # question-answer pairs and the release file.
+    for drucksache_id in answer_ids(
+        positions, wp_of, fetch_filter.fulltext_wahlperioden
+    ):
+        client.get(f"drucksache-text/{drucksache_id}")
 
     if not client.offline:
         write_state(state | {"vorgang": started.isoformat()})

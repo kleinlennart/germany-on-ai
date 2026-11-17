@@ -159,6 +159,56 @@
   update_frequency: weekly
   languages: [de]
 
+- id: bundesregierung-feeds
+  name: Federal Government press feeds
+  publisher: Press and Information Office of the Federal Government
+  url: https://www.bundesregierung.de/breg-de/service/newsletter-und-abos/rss-newsfeed
+  description: >-
+    RSS feeds of the federal government's press releases, including the Chancellor's weekly
+    appointments, and of the Bulletin with speeches by the Chancellor and ministers.
+  kind: primary
+  arenas: [domestic, international]
+  access: dataset
+  status: ingested
+  languages: [de]
+  update_frequency: daily
+  terms:
+    url: https://www.bundesregierung.de/breg-de/impressum
+    notes: >-
+      No reuse licence stated. Stored as title, date, link and a short excerpt; full texts
+      stay on the government's site. Feeds keep no history, so items are polled and kept.
+
+- id: bundesrat-events
+  name: Bundesrat events feed
+  publisher: Bundesrat
+  url: https://www.bundesrat.de/DE/service-navi/rss/rss-node.html
+  description: Upcoming Bundesrat plenary sessions and events, with date and time.
+  kind: primary
+  arenas: [domestic]
+  access: dataset
+  status: ingested
+  languages: [de]
+  update_frequency: weekly
+  terms:
+    url: https://www.bundesrat.de/DE/service-navi/impressum/impressum-node.html
+    notes: Site content is copyrighted; dates and titles are facts and are stored with a link.
+
+- id: bundestag-sitting-weeks
+  name: Bundestag sitting calendar
+  name_original: Sitzungskalender
+  publisher: Deutscher Bundestag
+  url: https://www.bundestag.de/parlament/plenum/sitzungskalender
+  description: The Bundestag's sitting weeks, published as calendar files for 2026 and 2027.
+  kind: primary
+  arenas: [domestic]
+  access: dataset
+  status: ingested
+  languages: [de]
+  update_frequency: irregular
+  terms:
+    url: https://www.bundestag.de/services/impressum
+    notes: Site content is copyrighted; dates are facts and are stored with a link.
+
 - id: auswaertiges-amt
   name: Federal Foreign Office newsroom
   publisher: Auswärtiges Amt

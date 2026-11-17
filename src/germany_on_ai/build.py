@@ -4,6 +4,7 @@ The build starts from scratch on every run and uses one thread, so the same
 commit always produces the same bytes.
 """
 
+import json
 from pathlib import Path
 
 import duckdb
@@ -46,6 +47,14 @@ def build(
 
     catalogue_json = out_dir / "catalogue.json"
     catalogue.export(catalogue.load(catalogue_path), catalogue_json)
+    events = sorted(catalogue.load_curated_events(), key=lambda e: (e.date, e.id))
+    (out_dir / "curated_events.json").write_text(
+        json.dumps(
+            [e.model_dump(mode="json") for e in events], ensure_ascii=False, indent=2
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
     counts = {}
     with duckdb.connect(db_path) as db:

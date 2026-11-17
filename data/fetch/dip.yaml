@@ -6,6 +6,10 @@ version: 1
 # and the Bundestag's Enquete Commission on AI (2018) were set up.
 wahlperioden: [19, 20, 21]
 
+# Full texts (plenary transcripts, government answers to interpellations) only for these
+# terms: the report focuses on the current term; earlier terms stay as proceedings only.
+fulltext_wahlperioden: [21]
+
 vorgang:
   # DIP thesaurus descriptors; "Maschinelles Lernen" resolves to "Künstliche Intelligenz".
   deskriptor:
